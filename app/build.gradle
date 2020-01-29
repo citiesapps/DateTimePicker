@@ -34,4 +34,6 @@ dependencies {
     // Butterknife
     implementation 'com.jakewharton:butterknife:10.1.0'
     annotationProcessor 'com.jakewharton:butterknife-compiler:10.1.0'
+
+    implementation "joda-time:joda-time:2.10.5"
 }

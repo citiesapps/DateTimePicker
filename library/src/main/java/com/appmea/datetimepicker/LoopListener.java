@@ -1,5 +1,5 @@
 package com.appmea.datetimepicker;
 
 public interface LoopListener {
-    void onItemSelect(int item);
+    void onItemSelect(LoopItem item);
 }

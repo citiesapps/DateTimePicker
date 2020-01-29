@@ -43,7 +43,7 @@ final class LoopTimerTask extends TimerTask {
         int i = (int) ((limitedVelocity * 10F) / 1000F);
         LoopView loopview = loopView;
         loopview.totalScrollY = loopview.totalScrollY - i;
-        if (!loopView.isLoop) {
+        if (!loopView.loopEnabled) {
             float itemHeight = loopView.lineSpacingMultiplier * loopView.maxTextHeight;
             if (loopView.totalScrollY <= (int) ((float) (-loopView.initPosition) * itemHeight)) {
                 // When reaching top
