@@ -4,12 +4,12 @@ import java.util.TimerTask;
 
 final class LoopTimerTask extends TimerTask {
 
-    private static final float MAX_VELOCITY = 5000F;
-    private static final float MIN_VELOCITY = 200F;
+    private static final float MAX_VELOCITY     = 5000F;
+    private static final float MIN_VELOCITY     = 200F;
     private static final float VELOCITY_REDUCER = 100F;
 
-    private float limitedVelocity;
-    private final float originalVelocityY;
+    private       float    limitedVelocity;
+    private final float    originalVelocityY;
     private final LoopView loopView;
 
     LoopTimerTask(LoopView loopview, float originalVelocityY) {
@@ -44,14 +44,13 @@ final class LoopTimerTask extends TimerTask {
         LoopView loopview = loopView;
         loopview.totalScrollY = loopview.totalScrollY - i;
         if (!loopView.loopEnabled) {
-            float itemHeight = loopView.lineSpacingMultiplier * loopView.maxTextHeight;
-            if (loopView.totalScrollY <= (int) ((float) (-loopView.initPosition) * itemHeight)) {
+            if (loopView.totalScrollY <= (int) ((float) (-loopView.initPosition) * loopView.itemHeight)) {
                 // When reaching top
                 limitedVelocity = 40F;
-                loopView.totalScrollY = (int) ((float) (-loopView.initPosition) * itemHeight);
-            } else if (loopView.totalScrollY >= (int) ((float) (loopView.items.size() - 1 - loopView.initPosition) * itemHeight)) {
+                loopView.totalScrollY = (int) ((float) (-loopView.initPosition) * loopView.itemHeight);
+            } else if (loopView.totalScrollY >= (int) ((float) (loopView.items.size() - 1 - loopView.initPosition) * loopView.itemHeight)) {
                 // When reaching bottom
-                loopView.totalScrollY = (int) ((float) (loopView.items.size() - 1 - loopView.initPosition) * itemHeight);
+                loopView.totalScrollY = (int) ((float) (loopView.items.size() - 1 - loopView.initPosition) * loopView.itemHeight);
                 limitedVelocity = -40F;
             }
         }

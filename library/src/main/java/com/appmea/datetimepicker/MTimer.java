@@ -24,10 +24,9 @@ final class MTimer extends TimerTask {
     @Override
     public final void run() {
         if (realTotalOffset == Integer.MAX_VALUE) {
-            float itemHeight = loopView.lineSpacingMultiplier * loopView.maxTextHeight;
-            offset = (int)((offset + itemHeight) % itemHeight);
-            if ((float) offset > itemHeight / 2.0F) {
-                realTotalOffset = (int) (itemHeight - (float) offset);
+            offset = (int)((offset + loopView.itemHeight) % loopView.itemHeight);
+            if ((float) offset > loopView.itemHeight / 2.0F) {
+                realTotalOffset = (int) (loopView.itemHeight - (float) offset);
             } else {
                 realTotalOffset = -offset;
             }

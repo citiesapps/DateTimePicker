@@ -305,33 +305,36 @@ public class DatePickerDialogFragment extends DialogFragment {
     // <editor-fold desc="Initialisation">
 
     private void initLoopViews() {
-        if ((fields & FIELD_YEAR) != 0) {
-            years = createYears(minDateTime.getYear(), maxDateTime.getYear());
-            lvYear.setItems(years);
-            lvYear.setVisibility(View.VISIBLE);
-            lvYear.setLoopEnabled((loops & LOOP_YEAR) != 0);
-            lvYear.setListener(this::handleYearSelected);
-            lvYear.setInitPosition(calcInitYear());
-            lvYear.setTextSize(textSizeDP);
-        }
-
-        if ((fields & FIELD_MONTH) != 0) {
-            months = createMonths(minDateTime.getMonthOfYear(), calcInitMaxMonth());
-            lvMonth.setItems(months);
-            lvMonth.setVisibility(View.VISIBLE);
-            lvMonth.setLoopEnabled((loops & LOOP_MONTH) != 0);
-            lvMonth.setListener(this::handleMonthSelected);
-            lvMonth.setInitPosition(calcInitMonth());
-            lvMonth.setTextSize(textSizeDP);
-        }
+//        if ((fields & FIELD_YEAR) != 0) {
+//            years = createYears(minDateTime.getYear(), maxDateTime.getYear());
+//            lvYear.setItems(years);
+//            lvYear.setVisibility(View.VISIBLE);
+//            lvYear.setLoopEnabled((loops & LOOP_YEAR) != 0);
+////            lvYear.setListener(this::handleYearSelected);
+//            lvYear.setInitPosition(0);//calcInitYear());
+////            lvYear.setInitPosition(calcInitYear());
+//            lvYear.setTextSize(textSizeDP);
+//        }
+//
+//        if ((fields & FIELD_MONTH) != 0) {
+//            months = createMonths(minDateTime.getMonthOfYear(), calcInitMaxMonth());
+//            lvMonth.setItems(months);
+//            lvMonth.setVisibility(View.VISIBLE);
+//            lvMonth.setLoopEnabled((loops & LOOP_MONTH) != 0);
+////            lvMonth.setListener(this::handleMonthSelected);
+//            lvYear.setInitPosition(0);//calcInitYear());
+////            lvMonth.setInitPosition(calcInitMonth());
+//            lvMonth.setTextSize(textSizeDP);
+//        }
 
         if ((fields & FIELD_DAY) != 0) {
             days = createDays(minDateTime.getDayOfMonth(), calcInitMaxDay());
             lvDay.setItems(days);
             lvDay.setVisibility(View.VISIBLE);
             lvDay.setLoopEnabled((loops & LOOP_DAY) != 0);
-            lvDay.setListener(this::handleDaySelected);
-            lvDay.setInitPosition(calcInitDay());
+//            lvDay.setListener(this::handleDaySelected);
+            lvYear.setInitPosition(4);//calcInitYear());
+//            lvDay.setInitPosition(calcInitDay());
             lvDay.setTextSize(textSizeDP);
         }
     }

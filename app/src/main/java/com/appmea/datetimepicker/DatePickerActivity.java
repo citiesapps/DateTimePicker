@@ -29,13 +29,15 @@ public class DatePickerActivity extends AppCompatActivity {
         ButterKnife.bind(this);
 
 
-        DatePickerDialogFragment.startFragment(this,
-                new DatePickerDialogFragment.Builder()
-                        .withFields(FIELD_ALL)
-                        .withLoops(NONE)
-                        .withMinDateTime(new DateTime(2030, 1, 1, 12, 0))
-                        .withMaxDateTime(new DateTime(2400, 8, 21, 12, 0))
-                        .withTextSize((int) (getResources().getDisplayMetrics().density * 24))
-        );
+        findViewById(R.id.tv_start).setOnClickListener(v -> {
+            DatePickerDialogFragment.startFragment(this,
+                    new DatePickerDialogFragment.Builder()
+                            .withFields(FIELD_ALL)
+                            .withLoops(NONE)
+                            .withMinDateTime(new DateTime(2000, 1, 1, 12, 0))
+                            .withMaxDateTime(new DateTime(2003, 8, 21, 12, 0))
+                            .withTextSize((int) (getResources().getDisplayMetrics().density * 24))
+            );
+        });
     }
 }

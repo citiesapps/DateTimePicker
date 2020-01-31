@@ -2,6 +2,7 @@ package com.appmea.datetimepicker;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
@@ -14,7 +15,9 @@ import android.view.View;
 
 import androidx.annotation.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -25,50 +28,61 @@ import timber.log.Timber;
 public class LoopView<T extends LoopItem> extends View {
     // ====================================================================================================================================================================================
     // <editor-fold desc="Constants">
+
+    private static final float PI_HALF = (float) (Math.PI / 2F);
+
+    private static final float DEFAULT_TEXT_SIZE = 40;
+
+    private static final int DEFAULT_COLOR_TEXT          = 0XFFAFAFAF;
+    private static final int DEFAULT_COLOR_TEXT_SELECTED = 0XFF313131;
+    private static final int DEFAULT_COLOR_DIVIDER       = 0XFFC5C5C5;
     // </editor-fold>
 
 
     // ====================================================================================================================================================================================
     // <editor-fold desc="Properties">
 
-    ScheduledExecutorService mExecutor = Executors.newSingleThreadScheduledExecutor();
-    private ScheduledFuture<?> mFuture;
+    final   ScheduledExecutorService mExecutor = Executors.newSingleThreadScheduledExecutor();
+    private ScheduledFuture<?>       mFuture;
     int          totalScrollY;
     Handler      handler;
     LoopListener loopListener;
 
+    List<T> items;
     private T selectedItem;
 
-    private GestureDetector                         gestureDetector;
-    private GestureDetector.SimpleOnGestureListener simpleOnGestureListener;
+    private GestureDetector gestureDetector;
 
-    Context  context;
-    Paint    paintText;  //paint that draw top and bottom text
-    Paint    paintSelected;  // paint that draw center text
-    Paint    paintDivider;  // paint that draw line besides center text
-    int      textSize;
-    int      maxTextWidth;
-    int      maxTextHeight;
-    int      colorGray;
-    int      colorBlack;
-    int      colorGrayLight;
-    float    lineSpacingMultiplier;
-    boolean  loopEnabled;
-    int      firstLineY;
-    int      secondLineY;
-    int      preCurrentIndex;
-    int      initPosition;
-    int      itemCount;
-    int      measuredHeight;
-    int      halfCircumference;
-    int      radius;
-    int      measuredWidth;
-    int      change;
-    float    y1;
-    float    y2;
-    float    dy;
-    List<T>  items;
-    String[] as;
+    final Paint    paintText             = new Paint();
+    final Paint    paintSelected         = new Paint();
+    final Paint    paintDivider          = new Paint();
+    final int      itemCount             = 7;
+    final String[] as                    = new String[itemCount];
+    final float    lineSpacingMultiplier = 2.0F;
+
+    int     initPosition = -1;
+    boolean loopEnabled;
+
+    int   textSize;
+    int   maxTextWidth;
+    int   maxTextHeight;
+    int   colorText;
+    int   colorTextSelected;
+    int   colorDivider;
+    float firstLineY;
+    float secondLineY;
+    int   preCurrentIndex;
+    float measuredHeight;
+    float halfCircumference;
+    float radius;
+    float itemHeight;
+    float measuredWidth;
+    int   change;
+    float y1;
+    float y2;
+    float dy;
+
+
     // </editor-fold>
 
 
@@ -76,18 +90,131 @@ public class LoopView<T extends LoopItem> extends View {
     // <editor-fold desc="Constructor">
 
     public LoopView(Context context) {
-        super(context);
-        initLoopView(context);
+        this(context, null);
     }
 
     public LoopView(Context context, AttributeSet attributeset) {
-        super(context, attributeset);
-        initLoopView(context);
+        this(context, attributeset, 0);
     }
 
     public LoopView(Context context, AttributeSet attributeset, int defStyleAttr) {
         super(context, attributeset, defStyleAttr);
-        initLoopView(context);
+        if (isInEditMode()) {
+            items = new ArrayList<>();
+            for (int i = 0; i < 10; i++) {
+                items.add((T) new StringLoopItem(String.valueOf(i)));
+            }
+            initPosition = 3;
+        }
+
+        initLoopView(context, attributeset);
+    }
+    // </editor-fold>
+
+
+    // ====================================================================================================================================================================================
+    // <editor-fold desc="Initialisation">
+
+    private void initLoopView(Context context, AttributeSet attributeset) {
+        final TypedArray array = context.obtainStyledAttributes(attributeset, R.styleable.LoopView);
+        try {
+            textSize = (int) array.getDimension(R.styleable.LoopView_textSize, array.getResources().getDisplayMetrics().density * DEFAULT_TEXT_SIZE);
+            colorText = array.getColor(R.styleable.LoopView_textColor, DEFAULT_COLOR_TEXT);
+            colorTextSelected = array.getColor(R.styleable.LoopView_selectedTextColor, DEFAULT_COLOR_TEXT_SELECTED);
+            colorDivider = array.getColor(R.styleable.LoopView_dividerColor, DEFAULT_COLOR_DIVIDER);
+        } finally {
+            array.recycle();
+            if (textSize == 0) {
+                textSize = (int) DEFAULT_TEXT_SIZE;
+            }
+
+            if (colorText == 0) {
+                colorText = DEFAULT_COLOR_TEXT;
+            }
+
+            if (colorTextSelected == 0) {
+                colorTextSelected = DEFAULT_COLOR_TEXT_SELECTED;
+            }
+
+            if (colorDivider == 0) {
+                colorDivider = DEFAULT_COLOR_DIVIDER;
+            }
+        }
+
+        initPaint(paintText, colorText);
+        initPaint(paintSelected, colorTextSelected);
+        initPaint(paintDivider, colorDivider);
+
+        handler = new MessageHandler(this);
+        GestureDetector.SimpleOnGestureListener simpleOnGestureListener = new LoopViewGestureListener(this);
+        gestureDetector = new GestureDetector(context, simpleOnGestureListener);
+        gestureDetector.setIsLongpressEnabled(false);
+    }
+
+    private void initPaint(Paint paint, int color) {
+        paint.setColor(color);
+        paint.setAntiAlias(true);
+        paint.setTypeface(Typeface.SANS_SERIF);
+        paint.setTextSize(textSize);
+    }
+
+    private void initData() {
+        if (items == null) {
+            return;
+        }
+
+        measureTextWidthHeight();
+        itemHeight = maxTextHeight * lineSpacingMultiplier;
+        halfCircumference = itemHeight * (itemCount - 1);
+        radius = (float) (halfCircumference / Math.PI);
+        measuredHeight = radius * 2;
+
+        firstLineY = ((measuredHeight - itemHeight) / 2.0F);
+        secondLineY = ((measuredHeight + itemHeight) / 2.0F);
+        if (initPosition == -1) {
+            if (loopEnabled) {
+                initPosition = (items.size() + 1) / 2;
+            } else {
+                initPosition = 0;
+            }
+        }
+        preCurrentIndex = initPosition;
+    }
+
+    private void measureTextWidthHeight() {
+        Paint.FontMetrics fm = paintText.getFontMetrics();
+        maxTextHeight = (int) (fm.descent - fm.ascent);
+
+        Rect rect = new Rect();
+        for (int i = 0; i < items.size(); i++) {
+            String string = items.get(i).getText();
+            paintSelected.getTextBounds(string, 0, string.length(), rect);
+            int textWidth = rect.width();
+            if (textWidth > maxTextWidth) {
+                maxTextWidth = textWidth;
+            }
+        }
+    }
+
+    private int measureDimension(int desiredSize, int measureSpec) {
+        int result;
+        int specMode = MeasureSpec.getMode(measureSpec);
+        int specSize = MeasureSpec.getSize(measureSpec);
+
+        if (specMode == MeasureSpec.EXACTLY) {
+            result = specSize;
+        } else {
+            result = desiredSize;
+            if (specMode == MeasureSpec.AT_MOST) {
+                result = Math.min(result, specSize);
+            }
+        }
+
+        if (result < desiredSize) {
+            Timber.e("The view is too small, the content might get cut");
+        }
+
+        return result;
     }
     // </editor-fold>
 
@@ -103,11 +230,14 @@ public class LoopView<T extends LoopItem> extends View {
         int desiredHeight = getSuggestedMinimumHeight() + getPaddingTop() + getPaddingBottom();
 
         int maxWidth = Math.max(desiredWidth, maxTextWidth);
-        int maxHeight = Math.max(desiredHeight, measuredHeight);
+        int maxHeight = (int) Math.max(desiredHeight, measuredHeight);
 
         setMeasuredDimension(measureDimension(maxWidth, widthMeasureSpec), measureDimension(maxHeight, heightMeasureSpec));
         measuredWidth = getMeasuredWidth();
     }
+
+    Paint  fill = new Paint();
+    Random rnd  = new Random();
 
     @Override
     protected void onDraw(Canvas canvas) {
@@ -115,7 +245,8 @@ public class LoopView<T extends LoopItem> extends View {
             super.onDraw(canvas);
             return;
         }
-        change = (int) (totalScrollY / (lineSpacingMultiplier * maxTextHeight));
+        change = (int) (totalScrollY / itemHeight);
+        Timber.e("change: %d", change);
         preCurrentIndex = initPosition + change % items.size();
         if (!loopEnabled) {
             if (preCurrentIndex < 0) {
@@ -132,8 +263,9 @@ public class LoopView<T extends LoopItem> extends View {
                 preCurrentIndex = preCurrentIndex - items.size();
             }
         }
+        Timber.e("index: %d", preCurrentIndex);
 
-        int j2 = (int) (totalScrollY % (lineSpacingMultiplier * maxTextHeight));
+        int scrollOffset = (int) (totalScrollY % itemHeight);
         int k1 = 0;
         while (k1 < itemCount) {
             int l1 = preCurrentIndex - (itemCount / 2 - k1);
@@ -155,24 +287,35 @@ public class LoopView<T extends LoopItem> extends View {
             k1++;
         }
         //auto calculate the text's left value when draw
-        int left = (measuredWidth - maxTextWidth) / 2;
+        int left = (int) ((measuredWidth - maxTextWidth) / 2);
 
-        canvas.drawLine(0.0F, firstLineY, measuredWidth, firstLineY, paintDivider);
-        canvas.drawLine(0.0F, secondLineY, measuredWidth, secondLineY, paintDivider);
+//        canvas.drawLine(0.0F, firstLineY, measuredWidth, firstLineY, paintDivider);
+//        canvas.drawLine(0.0F, secondLineY, measuredWidth, secondLineY, paintDivider);
         int j1 = 0;
+
         while (j1 < itemCount) {
             canvas.save();
             // L=α* r
             // (L * π ) / (π * r)
             float itemHeight = maxTextHeight * lineSpacingMultiplier;
-            double radian = ((itemHeight * j1 - j2) * Math.PI) / halfCircumference;
+            double radian = ((itemHeight * j1 - scrollOffset) * Math.PI) / halfCircumference;
             float angle = (float) (90D - (radian / Math.PI) * 180D);
             if (angle >= 90F || angle <= -90F) {
                 canvas.restore();
             } else {
                 int translateY = (int) (radius - Math.cos(radian) * radius - (Math.sin(radian) * maxTextHeight) / 2D);
                 canvas.translate(0.0F, translateY);
+                Timber.e("onDraw: %d, %f", j1, Math.sin(radian));
+
                 canvas.scale(1.0F, (float) Math.sin(radian));
+                fill.setStyle(Paint.Style.FILL_AND_STROKE);
+                fill.setARGB(180, rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256));
+
+                canvas.save();
+                canvas.clipRect(0, 0, measuredWidth, (int) (itemHeight));
+                canvas.drawPaint(fill);
+                canvas.restore();
+
                 if (translateY <= firstLineY && maxTextHeight + translateY >= firstLineY) {
                     canvas.save();
                     //top = 0,left = (measuredWidth - maxTextWidth)/2
@@ -205,115 +348,67 @@ public class LoopView<T extends LoopItem> extends View {
             }
             j1++;
         }
+//        while (j1 < itemCount) {
+//            canvas.save();
+//            // B=α* r
+//            // (B * π ) / (π * r)
+//            float radiantItemHeight = (float) ((itemHeight * j1 - scrollOffset)*Math.PI / (radius*2));
+//            float radiantFromTop = PI_HALF - radiantItemHeight;
+//            int angleItem = (int) Math.round((radiantItemHeight / Math.PI) * 180);
+//            int angleTop = (int) Math.round((radiantFromTop / Math.PI) * 180);
+//
+//            double sin = Math.abs(Math.sin(radiantItemHeight ));
+//            Timber.e("onDraw: Item: %d | radTop: %f | angleTop: %d | sin: %f | %s", j1, radiantFromTop, angleTop, sin, angleTop >= 90 || angleTop <= -90);
+//            if (angleTop >= 90 || angleTop <= -90) {
+//                canvas.restore();
+//            } else {
+//                int translateY = (int) (radius - Math.cos(radiantItemHeight) * radius - (Math.sin(radiantItemHeight) * maxTextHeight) / 2D);
+////                int translateY = (int) (radius - Math.cos(radiantItemHeight) * radius - (Math.sin(radiantItemHeight) * maxTextHeight) / 2D);
+//                canvas.translate(0.0F, translateY);
+//                Timber.e("onDraw: scale: %f", (float) (1f - sin));
+//                canvas.scale(1.0F, (float) sin);
+//
+//                fill.setStyle(Paint.Style.FILL_AND_STROKE);
+//                fill.setARGB(180, rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256));
+//
+//                canvas.clipRect(0, 0, measuredWidth, itemHeight);
+////                canvas.drawPaint(fill);
+//                canvas.drawText(as[j1], left, maxTextHeight, paintText);
+//
+//
+////                if (translateY <= firstLineY && maxTextHeight + translateY >= firstLineY) {
+////                    canvas.save();
+////                    //top = 0,left = (measuredWidth - maxTextWidth)/2
+////                    canvas.clipRect(0, 0, measuredWidth, firstLineY - translateY);
+////                    canvas.drawText(as[j1], left, maxTextHeight, paintText);
+////                    canvas.restore();
+////                    canvas.save();
+////                    canvas.clipRect(0, firstLineY - translateY, measuredWidth, (int) (itemHeight));
+////                    canvas.drawText(as[j1], left, maxTextHeight, paintSelected);
+////                    canvas.restore();
+////                } else if (translateY <= secondLineY && maxTextHeight + translateY >= secondLineY) {
+////                    canvas.save();
+////                    canvas.clipRect(0, 0, measuredWidth, secondLineY - translateY);
+////                    canvas.drawText(as[j1], left, maxTextHeight, paintSelected);
+////                    canvas.restore();
+////                    canvas.save();
+////                    canvas.clipRect(0, secondLineY - translateY, measuredWidth, (int) (itemHeight));
+////                    canvas.drawText(as[j1], left, maxTextHeight, paintText);
+////                    canvas.restore();
+////                } else if (translateY >= firstLineY && maxTextHeight + translateY <= secondLineY) {
+////                    canvas.clipRect(0, 0, measuredWidth, (int) (itemHeight));
+////                    canvas.drawText(as[j1], left, maxTextHeight, paintSelected);
+////                    selectedItem = findItem(as[j1]);
+////
+////                } else {
+////                    canvas.clipRect(0, 0, measuredWidth, (int) (itemHeight));
+////                    canvas.drawText(as[j1], left, maxTextHeight, paintText);
+////                }
+//                canvas.restore();
+//            }
+//            j1++;
+//        }
         super.onDraw(canvas);
-    }
-    // </editor-fold>
-
-
-    // ====================================================================================================================================================================================
-    // <editor-fold desc="Initialisation">
-
-    private void initLoopView(Context context) {
-        textSize = 0;
-        colorGray = 0xffafafaf;
-        colorBlack = 0xff313131;
-        colorGrayLight = 0xffc5c5c5;
-        lineSpacingMultiplier = 2.0F;
-        loopEnabled = true;
-        initPosition = -1;
-        itemCount = 7;
-        as = new String[itemCount];
-        y1 = 0.0F;
-        y2 = 0.0F;
-        dy = 0.0F;
-        totalScrollY = 0;
-        simpleOnGestureListener = new LoopViewGestureListener(this);
-        handler = new MessageHandler(this);
-        this.context = context;
-        setTextSize(16F);
-
-        paintText = new Paint();
-        paintSelected = new Paint();
-        paintDivider = new Paint();
-        if (android.os.Build.VERSION.SDK_INT >= 11) {
-            setLayerType(LAYER_TYPE_SOFTWARE, null);
-        }
-        gestureDetector = new GestureDetector(context, simpleOnGestureListener);
-        gestureDetector.setIsLongpressEnabled(false);
-    }
-
-    private void initData() {
-        if (items == null) {
-            return;
-        }
-
-        paintText.setColor(colorGray);
-        paintText.setAntiAlias(true);
-        paintText.setTypeface(Typeface.SANS_SERIF);
-        paintText.setTextSize(textSize);
-
-        paintSelected.setColor(colorBlack);
-        paintSelected.setAntiAlias(true);
-        paintSelected.setTypeface(Typeface.SANS_SERIF);
-        paintSelected.setTextSize(textSize);
-
-        paintDivider.setColor(colorGrayLight);
-        paintDivider.setAntiAlias(true);
-        paintDivider.setTextSize(textSize);
-
-        measureTextWidthHeight();
-
-        halfCircumference = (int) (maxTextHeight * lineSpacingMultiplier * (itemCount - 1));
-        measuredHeight = (int) ((halfCircumference * 2) / Math.PI);
-        radius = (int) (halfCircumference / Math.PI);
-        firstLineY = (int) ((measuredHeight - lineSpacingMultiplier * maxTextHeight) / 2.0F);
-        secondLineY = (int) ((measuredHeight + lineSpacingMultiplier * maxTextHeight) / 2.0F);
-        if (initPosition == -1) {
-            if (loopEnabled) {
-                initPosition = (items.size() + 1) / 2;
-            } else {
-                initPosition = 0;
-            }
-        }
-        preCurrentIndex = initPosition;
-    }
-
-    private void measureTextWidthHeight() {
-        Rect rect = new Rect();
-        for (int i = 0; i < items.size(); i++) {
-            String s1 = items.get(i).getText();
-            paintSelected.getTextBounds(s1, 0, s1.length(), rect);
-            int textWidth = rect.width();
-            if (textWidth > maxTextWidth) {
-                maxTextWidth = textWidth;
-            }
-            paintSelected.getTextBounds("\u661F\u671F", 0, 2, rect); // 星期
-            int textHeight = rect.height();
-            if (textHeight > maxTextHeight) {
-                maxTextHeight = textHeight;
-            }
-        }
-    }
-
-    private int measureDimension(int desiredSize, int measureSpec) {
-        int result;
-        int specMode = MeasureSpec.getMode(measureSpec);
-        int specSize = MeasureSpec.getSize(measureSpec);
-
-        if (specMode == MeasureSpec.EXACTLY) {
-            result = specSize;
-        } else {
-            result = desiredSize;
-            if (specMode == MeasureSpec.AT_MOST) {
-                result = Math.min(result, specSize);
-            }
-        }
-
-        if (result < desiredSize) {
-            Timber.e("The view is too small, the content might get cut");
-        }
-
-        return result;
     }
     // </editor-fold>
 
@@ -334,7 +429,7 @@ public class LoopView<T extends LoopItem> extends View {
                 y1 = y2;
                 totalScrollY = (int) ((float) totalScrollY + dy);
                 if (!loopEnabled) {
-                    int initPositionCircleLength = (int) (initPosition * (lineSpacingMultiplier * maxTextHeight));
+                    int initPositionCircleLength = (int) (initPosition * itemHeight);
                     int initPositionStartY = -1 * initPositionCircleLength;
                     if (totalScrollY < initPositionStartY) {
                         totalScrollY = initPositionStartY;
@@ -350,7 +445,7 @@ public class LoopView<T extends LoopItem> extends View {
         }
 
         if (!loopEnabled) {
-            int circleLength = (int) ((float) (items.size() - 1 - initPosition) * (lineSpacingMultiplier * maxTextHeight));
+            int circleLength = (int) ((float) (items.size() - 1 - initPosition) * itemHeight);
             if (totalScrollY >= circleLength) {
                 totalScrollY = circleLength;
             }
@@ -368,7 +463,7 @@ public class LoopView<T extends LoopItem> extends View {
     // ====================================================================================================================================================================================
     // <editor-fold desc="Methods">
     private void smoothScroll() {
-        int offset = (int) (totalScrollY % (lineSpacingMultiplier * maxTextHeight));
+        int offset = (int) (totalScrollY % itemHeight);
         cancelFuture();
         mFuture = mExecutor.scheduleWithFixedDelay(new MTimer(this, offset), 0, 10, TimeUnit.MILLISECONDS);
     }
@@ -410,6 +505,7 @@ public class LoopView<T extends LoopItem> extends View {
         if (items != null) {
             if (!items.isEmpty()) {
                 this.initPosition = Math.min(items.size() - 1, initPosition);
+                Timber.e("setItems: %d", initPosition);
             }
         }
         initData();
@@ -451,12 +547,9 @@ public class LoopView<T extends LoopItem> extends View {
     }
 
     public void setTextSize(int textSize) {
-        this.textSize = textSize;
-    }
-
-    public final void setTextSize(float size) {
-        if (size > 0.0F) {
-            textSize = (int) (context.getResources().getDisplayMetrics().density * size);
+        if (this.textSize != textSize) {
+            this.textSize = textSize;
+            invalidate();
         }
     }
 
@@ -471,6 +564,7 @@ public class LoopView<T extends LoopItem> extends View {
         }
 
         this.initPosition = initPosition;
+        invalidate();
     }
 
 
