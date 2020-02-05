@@ -31,6 +31,7 @@ import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import timber.log.Timber;
 
 import static com.appmea.datetimepicker.Constants.ARGUMENT_FIELDS;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_LOOPS;
@@ -333,7 +334,7 @@ public class DatePickerDialogFragment extends DialogFragment {
             lvDay.setVisibility(View.VISIBLE);
             lvDay.setLoopEnabled((loops & LOOP_DAY) != 0);
 //            lvDay.setListener(this::handleDaySelected);
-            lvYear.setInitPosition(4);//calcInitYear());
+//            lvYear.setInitPosition(calcInitYear());
 //            lvDay.setInitPosition(calcInitDay());
             lvDay.setTextSize(textSizeDP);
         }
@@ -357,8 +358,8 @@ public class DatePickerDialogFragment extends DialogFragment {
         if (minDateTime.isEqual(selectedDateTime)) {
             return 0;
         } else if (maxDateTime.isEqual(selectedDateTime)) {
-            return years.size()-1;
-        }else{
+            return years.size() - 1;
+        } else {
             return selectedDateTime.getYear() - minDateTime.getYear();
         }
     }
@@ -367,8 +368,8 @@ public class DatePickerDialogFragment extends DialogFragment {
         if (minDateTime.isEqual(selectedDateTime)) {
             return 0;
         } else if (maxDateTime.isEqual(selectedDateTime)) {
-            return months.size()-1;
-        }else{
+            return months.size() - 1;
+        } else {
             return selectedDateTime.getMonthOfYear() - minDateTime.getMonthOfYear();
         }
     }
@@ -377,8 +378,8 @@ public class DatePickerDialogFragment extends DialogFragment {
         if (minDateTime.isEqual(selectedDateTime)) {
             return 0;
         } else if (maxDateTime.isEqual(selectedDateTime)) {
-            return days.size()-1;
-        }else{
+            return days.size() - 1;
+        } else {
             return selectedDateTime.getDayOfMonth() - minDateTime.getDayOfMonth();
         }
     }
@@ -403,7 +404,7 @@ public class DatePickerDialogFragment extends DialogFragment {
 
     private List<StringLoopItem> createDays(int min, int max) {
         List<StringLoopItem> days = new ArrayList<>();
-        for (int i = min; i <= max; i++) {
+        for (int i = min; i <= 5; i++) {
             days.add(new StringLoopItem(String.valueOf(i)));
         }
 
@@ -446,7 +447,8 @@ public class DatePickerDialogFragment extends DialogFragment {
     }
 
     private void handleDaySelected(LoopItem item) {
-        selectedDateTime = selectedDateTime.dayOfMonth().setCopy(item.getText());
+        Timber.e("handleDaySelected: %s", item.getText());
+//        selectedDateTime = selectedDateTime.dayOfMonth().setCopy(item.getText());
     }
 
 

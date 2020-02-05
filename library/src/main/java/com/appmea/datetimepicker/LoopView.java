@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
@@ -29,7 +30,9 @@ public class LoopView<T extends LoopItem> extends View {
     // ====================================================================================================================================================================================
     // <editor-fold desc="Constants">
 
-    private static final float PI_HALF = (float) (Math.PI / 2F);
+    private static final float PI_HALF   = (float) (Math.PI / 2F);
+    private static final float PI        = (float) Math.PI;
+    private static final float PI_DOUBLE = (float) (Math.PI * 2F);
 
     private static final float DEFAULT_TEXT_SIZE = 40;
 
@@ -44,7 +47,13 @@ public class LoopView<T extends LoopItem> extends View {
 
     final   ScheduledExecutorService mExecutor = Executors.newSingleThreadScheduledExecutor();
     private ScheduledFuture<?>       mFuture;
-    int          totalScrollY;
+
+    /**
+     * Ranges from Min: itemHeight/2 TO Max: itemHeight * (displayableItemCount + itemCount -1)
+     */
+    int          currentScrollY;
+    int          minScrollY;
+    int          maxScrollY;
     Handler      handler;
     LoopListener loopListener;
 
@@ -53,12 +62,15 @@ public class LoopView<T extends LoopItem> extends View {
 
     private GestureDetector gestureDetector;
 
-    final Paint    paintText             = new Paint();
-    final Paint    paintSelected         = new Paint();
-    final Paint    paintDivider          = new Paint();
-    final int      itemCount             = 7;
-    final String[] as                    = new String[itemCount];
-    final float    lineSpacingMultiplier = 2.0F;
+    final Paint    paintText            = new Paint();
+    final Paint    paintSelected        = new Paint();
+    final Paint    paintDivider         = new Paint();
+    final Paint    paintTest            = new Paint();
+    final int      displayableItemCount = 7;
+    final String[] as                   = new String[displayableItemCount];
+    final float[]  ratios               = new float[displayableItemCount];
+
+    final float lineSpacingMultiplier = 1.5F;
 
     int     initPosition = -1;
     boolean loopEnabled;
@@ -81,6 +93,7 @@ public class LoopView<T extends LoopItem> extends View {
     float y1;
     float y2;
     float dy;
+    private float radiantSingleItem;
 
 
     // </editor-fold>
@@ -144,6 +157,7 @@ public class LoopView<T extends LoopItem> extends View {
         initPaint(paintText, colorText);
         initPaint(paintSelected, colorTextSelected);
         initPaint(paintDivider, colorDivider);
+        initPaint(paintTest, Color.GREEN);
 
         handler = new MessageHandler(this);
         GestureDetector.SimpleOnGestureListener simpleOnGestureListener = new LoopViewGestureListener(this);
@@ -165,7 +179,16 @@ public class LoopView<T extends LoopItem> extends View {
 
         measureTextWidthHeight();
         itemHeight = maxTextHeight * lineSpacingMultiplier;
-        halfCircumference = itemHeight * (itemCount - 1);
+        float angleDegree = 180f / (displayableItemCount - 1);
+        // As each item has the same height
+        radiantSingleItem = (float) Math.toRadians(angleDegree);
+
+//        Can't use acr, as it would falsify the itemHeight
+//        acr for centered item needs to be itemHeight
+//        arc = 2*sin(alpha/2)*r
+//        radius = (float) (itemHeight / (2 * Math.sin(Math.toRadians(angleDegree / 2))));
+
+        halfCircumference = itemHeight * (displayableItemCount - 1);
         radius = (float) (halfCircumference / Math.PI);
         measuredHeight = radius * 2;
 
@@ -178,7 +201,11 @@ public class LoopView<T extends LoopItem> extends View {
                 initPosition = 0;
             }
         }
+
+        currentScrollY = (int) ((itemHeight * initPosition + itemHeight / 2f));
         preCurrentIndex = initPosition;
+
+        Timber.e("ItemHeight: %f, Radius: %f, TotalScrollY: %d", itemHeight, radius, currentScrollY);
     }
 
     private void measureTextWidthHeight() {
@@ -234,20 +261,23 @@ public class LoopView<T extends LoopItem> extends View {
 
         setMeasuredDimension(measureDimension(maxWidth, widthMeasureSpec), measureDimension(maxHeight, heightMeasureSpec));
         measuredWidth = getMeasuredWidth();
+
+        minScrollY = (int) (itemHeight / 2);
+        maxScrollY = (int) (itemHeight * (-0.5 + items.size()));
+        Timber.e("MinScroll: %d, MaxScroll: %d", minScrollY, maxScrollY);
     }
+
 
     Paint  fill = new Paint();
     Random rnd  = new Random();
 
-    @Override
-    protected void onDraw(Canvas canvas) {
-        if (items == null) {
-            super.onDraw(canvas);
-            return;
-        }
-        change = (int) (totalScrollY / itemHeight);
-        Timber.e("change: %d", change);
-        preCurrentIndex = initPosition + change % items.size();
+    private void updateCurrentIndex() {
+        preCurrentIndex = (int) (currentScrollY / itemHeight);
+        sanityCheckIndex();
+        getCurrentCanvasItems();
+    }
+
+    private void sanityCheckIndex() {
         if (!loopEnabled) {
             if (preCurrentIndex < 0) {
                 preCurrentIndex = 0;
@@ -263,12 +293,12 @@ public class LoopView<T extends LoopItem> extends View {
                 preCurrentIndex = preCurrentIndex - items.size();
             }
         }
-        Timber.e("index: %d", preCurrentIndex);
+    }
 
-        int scrollOffset = (int) (totalScrollY % itemHeight);
+    private void getCurrentCanvasItems() {
         int k1 = 0;
-        while (k1 < itemCount) {
-            int l1 = preCurrentIndex - (itemCount / 2 - k1);
+        while (k1 < displayableItemCount) {
+            int l1 = preCurrentIndex - (displayableItemCount / 2 - k1);
             if (loopEnabled) {
                 if (l1 < 0) {
                     l1 = l1 + items.size();
@@ -286,128 +316,100 @@ public class LoopView<T extends LoopItem> extends View {
             }
             k1++;
         }
-        //auto calculate the text's left value when draw
-        int left = (int) ((measuredWidth - maxTextWidth) / 2);
+    }
 
-//        canvas.drawLine(0.0F, firstLineY, measuredWidth, firstLineY, paintDivider);
-//        canvas.drawLine(0.0F, secondLineY, measuredWidth, secondLineY, paintDivider);
+    @Override
+    protected void onDraw(Canvas canvas) {
+        if (items == null) {
+            super.onDraw(canvas);
+            return;
+        }
+
+        int scrollOffset = (int) (currentScrollY % itemHeight);
+        updateCurrentIndex();
+
+        int left = (int) ((measuredWidth - maxTextWidth) / 2);
         int j1 = 0;
 
-        while (j1 < itemCount) {
-            canvas.save();
-            // L=α* r
-            // (L * π ) / (π * r)
-            float itemHeight = maxTextHeight * lineSpacingMultiplier;
-            double radian = ((itemHeight * j1 - scrollOffset) * Math.PI) / halfCircumference;
-            float angle = (float) (90D - (radian / Math.PI) * 180D);
-            if (angle >= 90F || angle <= -90F) {
-                canvas.restore();
+
+        for (int i = 0; i < displayableItemCount; i++) {
+            float radiantItemHeight = (float) ((itemHeight * (i + 1) - scrollOffset) / radius);
+            float radiantBottom = radiantItemHeight - radiantSingleItem;
+
+            if (radiantBottom > PI && radiantItemHeight < PI_DOUBLE) {
+                // Item outside
+            } else if (radiantItemHeight < PI_HALF) {
+                if (radiantBottom >= 0) {
+                    // Item completely on right side
+                    ratios[i] = (float) (1f - Math.cos(radiantItemHeight) - (1F - Math.cos(radiantBottom)));
+                } else {
+                    // Item partially on right side
+                    ratios[i] = (float) (1f - Math.cos(radiantItemHeight));
+                }
+
             } else {
-                int translateY = (int) (radius - Math.cos(radian) * radius - (Math.sin(radian) * maxTextHeight) / 2D);
-                canvas.translate(0.0F, translateY);
-                Timber.e("onDraw: %d, %f", j1, Math.sin(radian));
+                if (radiantBottom < PI_HALF) {
+                    // Item on both sides
+                    ratios[i] = (float) (Math.abs(Math.cos(radiantItemHeight)) + Math.cos(radiantBottom));
 
-                canvas.scale(1.0F, (float) Math.sin(radian));
-                fill.setStyle(Paint.Style.FILL_AND_STROKE);
-                fill.setARGB(180, rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256));
-
-                canvas.save();
-                canvas.clipRect(0, 0, measuredWidth, (int) (itemHeight));
-                canvas.drawPaint(fill);
-                canvas.restore();
-
-                if (translateY <= firstLineY && maxTextHeight + translateY >= firstLineY) {
-                    canvas.save();
-                    //top = 0,left = (measuredWidth - maxTextWidth)/2
-                    canvas.clipRect(0, 0, measuredWidth, firstLineY - translateY);
-                    canvas.drawText(as[j1], left, maxTextHeight, paintText);
-                    canvas.restore();
-                    canvas.save();
-                    canvas.clipRect(0, firstLineY - translateY, measuredWidth, (int) (itemHeight));
-                    canvas.drawText(as[j1], left, maxTextHeight, paintSelected);
-                    canvas.restore();
-                } else if (translateY <= secondLineY && maxTextHeight + translateY >= secondLineY) {
-                    canvas.save();
-                    canvas.clipRect(0, 0, measuredWidth, secondLineY - translateY);
-                    canvas.drawText(as[j1], left, maxTextHeight, paintSelected);
-                    canvas.restore();
-                    canvas.save();
-                    canvas.clipRect(0, secondLineY - translateY, measuredWidth, (int) (itemHeight));
-                    canvas.drawText(as[j1], left, maxTextHeight, paintText);
-                    canvas.restore();
-                } else if (translateY >= firstLineY && maxTextHeight + translateY <= secondLineY) {
-                    canvas.clipRect(0, 0, measuredWidth, (int) (itemHeight));
-                    canvas.drawText(as[j1], left, maxTextHeight, paintSelected);
-                    selectedItem = findItem(as[j1]);
+                } else if (radiantItemHeight <= PI) {
+                    // Item completely on left side
+                    ratios[i] = (float) (-1f - Math.cos(radiantItemHeight) - (-1F - Math.cos(radiantBottom)));
 
                 } else {
-                    canvas.clipRect(0, 0, measuredWidth, (int) (itemHeight));
-                    canvas.drawText(as[j1], left, maxTextHeight, paintText);
+                    // Item partially on left side
+                    ratios[i] = (float) (1f + Math.cos(radiantBottom));
                 }
-                canvas.restore();
             }
+
+            ratios[i] = ratios[i] * radius / itemHeight;
+//            Timber.e("String: %s, RadItem: %f, RadBottom: %f, Ratio: %f", as[i], radiantItemHeight, radiantBottom, ratios[i]);
+        }
+
+//        paintTest.setAlpha(50);
+//        canvas.drawPaint(paintTest);
+
+        int translation = 0;
+        while (j1 < displayableItemCount) {
+            canvas.save();
+            canvas.translate(0.0F, translation);
+            translation += itemHeight * ratios[j1];
+            canvas.scale(1.0F, ratios[j1]);
+
+            fill.setStyle(Paint.Style.FILL_AND_STROKE);
+//            Beautiful
+//            if (as[j1].equals("")) {
+//                if (j1 % 2 == 0) {
+//                    fill.setARGB(255, 255, 0, 255);
+//                } else {
+//                    fill.setARGB(255, 255, 255, 0);
+//                }
+//            } else {
+//                if (Integer.valueOf(as[j1]) % 2 == 0) {
+//                    fill.setARGB(255, 255, 255, 255);
+//                } else {
+//                    fill.setARGB(255, 0, 0, 0);
+//                }
+//            }
+
+//          Functional
+            if (j1 % 2 == 0) {
+                fill.setARGB(255, 255, 255, 255);
+            } else {
+                fill.setARGB(255, 0, 0, 0);
+            }
+
+
+            canvas.clipRect(0, 0, measuredWidth, itemHeight);
+            canvas.drawPaint(fill);
+            int yPos = (int) ((itemHeight / 2) - ((paintText.descent() + paintText.ascent()) / 2));
+            canvas.drawText(as[j1], left, yPos, paintText);
+
+            canvas.restore();
             j1++;
         }
-//        while (j1 < itemCount) {
-//            canvas.save();
-//            // B=α* r
-//            // (B * π ) / (π * r)
-//            float radiantItemHeight = (float) ((itemHeight * j1 - scrollOffset)*Math.PI / (radius*2));
-//            float radiantFromTop = PI_HALF - radiantItemHeight;
-//            int angleItem = (int) Math.round((radiantItemHeight / Math.PI) * 180);
-//            int angleTop = (int) Math.round((radiantFromTop / Math.PI) * 180);
-//
-//            double sin = Math.abs(Math.sin(radiantItemHeight ));
-//            Timber.e("onDraw: Item: %d | radTop: %f | angleTop: %d | sin: %f | %s", j1, radiantFromTop, angleTop, sin, angleTop >= 90 || angleTop <= -90);
-//            if (angleTop >= 90 || angleTop <= -90) {
-//                canvas.restore();
-//            } else {
-//                int translateY = (int) (radius - Math.cos(radiantItemHeight) * radius - (Math.sin(radiantItemHeight) * maxTextHeight) / 2D);
-////                int translateY = (int) (radius - Math.cos(radiantItemHeight) * radius - (Math.sin(radiantItemHeight) * maxTextHeight) / 2D);
-//                canvas.translate(0.0F, translateY);
-//                Timber.e("onDraw: scale: %f", (float) (1f - sin));
-//                canvas.scale(1.0F, (float) sin);
-//
-//                fill.setStyle(Paint.Style.FILL_AND_STROKE);
-//                fill.setARGB(180, rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256));
-//
-//                canvas.clipRect(0, 0, measuredWidth, itemHeight);
-////                canvas.drawPaint(fill);
-//                canvas.drawText(as[j1], left, maxTextHeight, paintText);
-//
-//
-////                if (translateY <= firstLineY && maxTextHeight + translateY >= firstLineY) {
-////                    canvas.save();
-////                    //top = 0,left = (measuredWidth - maxTextWidth)/2
-////                    canvas.clipRect(0, 0, measuredWidth, firstLineY - translateY);
-////                    canvas.drawText(as[j1], left, maxTextHeight, paintText);
-////                    canvas.restore();
-////                    canvas.save();
-////                    canvas.clipRect(0, firstLineY - translateY, measuredWidth, (int) (itemHeight));
-////                    canvas.drawText(as[j1], left, maxTextHeight, paintSelected);
-////                    canvas.restore();
-////                } else if (translateY <= secondLineY && maxTextHeight + translateY >= secondLineY) {
-////                    canvas.save();
-////                    canvas.clipRect(0, 0, measuredWidth, secondLineY - translateY);
-////                    canvas.drawText(as[j1], left, maxTextHeight, paintSelected);
-////                    canvas.restore();
-////                    canvas.save();
-////                    canvas.clipRect(0, secondLineY - translateY, measuredWidth, (int) (itemHeight));
-////                    canvas.drawText(as[j1], left, maxTextHeight, paintText);
-////                    canvas.restore();
-////                } else if (translateY >= firstLineY && maxTextHeight + translateY <= secondLineY) {
-////                    canvas.clipRect(0, 0, measuredWidth, (int) (itemHeight));
-////                    canvas.drawText(as[j1], left, maxTextHeight, paintSelected);
-////                    selectedItem = findItem(as[j1]);
-////
-////                } else {
-////                    canvas.clipRect(0, 0, measuredWidth, (int) (itemHeight));
-////                    canvas.drawText(as[j1], left, maxTextHeight, paintText);
-////                }
-//                canvas.restore();
-//            }
-//            j1++;
-//        }
+        // </editor-fold>
+
         super.onDraw(canvas);
     }
     // </editor-fold>
@@ -427,33 +429,33 @@ public class LoopView<T extends LoopItem> extends View {
                 y2 = motionevent.getRawY();
                 dy = y1 - y2;
                 y1 = y2;
-                totalScrollY = (int) ((float) totalScrollY + dy);
+                currentScrollY = (int) ((float) currentScrollY + dy);
                 if (!loopEnabled) {
-                    int initPositionCircleLength = (int) (initPosition * itemHeight);
-                    int initPositionStartY = -1 * initPositionCircleLength;
-                    if (totalScrollY < initPositionStartY) {
-                        totalScrollY = initPositionStartY;
+                    float itemHeightHalf = itemHeight / 2;
+                    if (currentScrollY < itemHeightHalf) {
+                        currentScrollY = (int) (itemHeightHalf);
                     }
                 }
                 break;
             case MotionEvent.ACTION_UP:
             default:
                 if (!gestureDetector.onTouchEvent(motionevent) && motionevent.getAction() == MotionEvent.ACTION_UP) {
-                    smoothScroll();
+                    settlePosition();
                 }
                 return true;
         }
 
         if (!loopEnabled) {
-            int circleLength = (int) ((float) (items.size() - 1 - initPosition) * itemHeight);
-            if (totalScrollY >= circleLength) {
-                totalScrollY = circleLength;
+            int length = (int) (itemHeight * (displayableItemCount + items.size() - 2) + itemHeight / 2);
+            length += measuredHeight;
+            if (currentScrollY >= maxScrollY) {
+                currentScrollY = maxScrollY;
             }
         }
         invalidate();
 
         if (!gestureDetector.onTouchEvent(motionevent) && motionevent.getAction() == MotionEvent.ACTION_UP) {
-            smoothScroll();
+            settlePosition();
         }
         return true;
     }
@@ -462,8 +464,11 @@ public class LoopView<T extends LoopItem> extends View {
 
     // ====================================================================================================================================================================================
     // <editor-fold desc="Methods">
-    private void smoothScroll() {
-        int offset = (int) (totalScrollY % itemHeight);
+
+    private void settlePosition() {
+        int offset = (int) ((currentScrollY) % itemHeight);
+        Timber.e("smoothScroll: %d", offset);
+
         cancelFuture();
         mFuture = mExecutor.scheduleWithFixedDelay(new MTimer(this, offset), 0, 10, TimeUnit.MILLISECONDS);
     }
@@ -535,8 +540,8 @@ public class LoopView<T extends LoopItem> extends View {
      * öalskdjfö jasöldkfj ölasd
      */
 
-    static void smoothScroll(LoopView loopview) {
-        loopview.smoothScroll();
+    static void settlePosition(LoopView loopview) {
+        loopview.settlePosition();
     }
 
     public void cancelFuture() {
@@ -549,7 +554,10 @@ public class LoopView<T extends LoopItem> extends View {
     public void setTextSize(int textSize) {
         if (this.textSize != textSize) {
             this.textSize = textSize;
-            invalidate();
+            initPaint(paintText, colorText);
+            initPaint(paintSelected, colorTextSelected);
+            initPaint(paintDivider, colorDivider);
+            requestLayout();
         }
     }
 

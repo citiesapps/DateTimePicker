@@ -2,6 +2,8 @@ package com.appmea.datetimepicker;
 
 import java.util.TimerTask;
 
+import timber.log.Timber;
+
 final class LoopTimerTask extends TimerTask {
 
     private static final float MAX_VELOCITY     = 5000F;
@@ -42,15 +44,15 @@ final class LoopTimerTask extends TimerTask {
         }
         int i = (int) ((limitedVelocity * 10F) / 1000F);
         LoopView loopview = loopView;
-        loopview.totalScrollY = loopview.totalScrollY - i;
+        loopview.currentScrollY = loopview.currentScrollY - i;
         if (!loopView.loopEnabled) {
-            if (loopView.totalScrollY <= (int) ((float) (-loopView.initPosition) * loopView.itemHeight)) {
+            if (loopView.currentScrollY <= (int) ((float) (-loopView.initPosition) * loopView.itemHeight)) {
                 // When reaching top
                 limitedVelocity = 40F;
-                loopView.totalScrollY = (int) ((float) (-loopView.initPosition) * loopView.itemHeight);
-            } else if (loopView.totalScrollY >= (int) ((float) (loopView.items.size() - 1 - loopView.initPosition) * loopView.itemHeight)) {
+                loopView.currentScrollY = (int) ((float) (-loopView.initPosition) * loopView.itemHeight);
+            } else if (loopView.currentScrollY >= (int) ((float) (loopView.items.size() - 1 - loopView.initPosition) * loopView.itemHeight)) {
                 // When reaching bottom
-                loopView.totalScrollY = (int) ((float) (loopView.items.size() - 1 - loopView.initPosition) * loopView.itemHeight);
+                loopView.currentScrollY = (int) ((float) (loopView.items.size() - 1 - loopView.initPosition) * loopView.itemHeight);
                 limitedVelocity = -40F;
             }
         }
