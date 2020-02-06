@@ -12,7 +12,10 @@ import android.os.Handler;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
+import android.view.VelocityTracker;
 import android.view.View;
+import android.view.ViewParent;
+import android.widget.OverScroller;
 
 import androidx.annotation.Nullable;
 
@@ -39,6 +42,10 @@ public class LoopView<T extends LoopItem> extends View {
     private static final int DEFAULT_COLOR_TEXT          = 0XFFAFAFAF;
     private static final int DEFAULT_COLOR_TEXT_SELECTED = 0XFF313131;
     private static final int DEFAULT_COLOR_DIVIDER       = 0XFFC5C5C5;
+
+    private static final int   TOUCH_SLOP       = 8;
+    private static final float MINIMUM_VELOCITY = 50;
+    private static final float MAXIMUM_VELOCITY = 8000;
     // </editor-fold>
 
 
@@ -66,7 +73,7 @@ public class LoopView<T extends LoopItem> extends View {
     final Paint    paintSelected        = new Paint();
     final Paint    paintDivider         = new Paint();
     final Paint    paintTest            = new Paint();
-    final int      displayableItemCount = 7;
+    final int      displayableItemCount = 9;
     final String[] as                   = new String[displayableItemCount];
     final float[]  ratios               = new float[displayableItemCount];
 
@@ -93,7 +100,11 @@ public class LoopView<T extends LoopItem> extends View {
     float y1;
     float y2;
     float dy;
-    private float radiantSingleItem;
+    private float           radiantSingleItem;
+    private int             lastMotionY;
+    private boolean         isBeingDragged;
+    private VelocityTracker velocityTracker;
+    private OverScroller    scroller;
 
 
     // </editor-fold>
@@ -163,6 +174,7 @@ public class LoopView<T extends LoopItem> extends View {
         GestureDetector.SimpleOnGestureListener simpleOnGestureListener = new LoopViewGestureListener(this);
         gestureDetector = new GestureDetector(context, simpleOnGestureListener);
         gestureDetector.setIsLongpressEnabled(false);
+        scroller = new OverScroller(context);
     }
 
     private void initPaint(Paint paint, int color) {
@@ -421,52 +433,218 @@ public class LoopView<T extends LoopItem> extends View {
     @SuppressLint("ClickableViewAccessibility")
     @Override
     public boolean onTouchEvent(MotionEvent motionevent) {
+        initVelocityTrackerIfNotExists();
+
         switch (motionevent.getAction()) {
             case MotionEvent.ACTION_DOWN:
+                if (getChildCount() == 0) {
+                    return false;
+                }
+
+                initOrResetVelocityTracker();
+                velocityTracker.addMovement(motionevent);
+
+                /*
+                 * If being flinged and user touches, stop the fling. isFinished
+                 * will be false if being flinged.
+                 */
+                if (!scroller.isFinished()) {
+                    scroller.abortAnimation();
+                }
+
+                // Remember where the motion event started
+                lastMotionY = (int) motionevent.getY();
                 y1 = motionevent.getRawY();
                 break;
+
+
             case MotionEvent.ACTION_MOVE:
-                y2 = motionevent.getRawY();
-                dy = y1 - y2;
-                y1 = y2;
-                currentScrollY = (int) ((float) currentScrollY + dy);
-                if (!loopEnabled) {
-                    float itemHeightHalf = itemHeight / 2;
-                    if (currentScrollY < itemHeightHalf) {
-                        currentScrollY = (int) (itemHeightHalf);
+                velocityTracker.addMovement(motionevent);
+
+                final int y = (int) motionevent.getY();
+                int deltaY = lastMotionY - y;
+
+
+                if (!isBeingDragged && Math.abs(deltaY) > TOUCH_SLOP) {
+                    final ViewParent parent = getParent();
+                    if (parent != null) {
+                        parent.requestDisallowInterceptTouchEvent(true);
+                    }
+                    isBeingDragged = true;
+                    if (deltaY > 0) {
+                        deltaY -= TOUCH_SLOP;
+                    } else {
+                        deltaY += TOUCH_SLOP;
                     }
                 }
-                break;
-            case MotionEvent.ACTION_UP:
-            default:
-                if (!gestureDetector.onTouchEvent(motionevent) && motionevent.getAction() == MotionEvent.ACTION_UP) {
-                    settlePosition();
+
+
+                if (isBeingDragged) {
+                    // Scroll to follow the motion event
+                    lastMotionY = y;
+//                    scroller.startScroll(getScrollX(), getScrollY(), 0, deltaY);
+
+//                    scrollTo(0, scroller.getCurrY());
+//                    onScrollChanged(0, scroller.getCurrY(), 0, getScrollY());
+
+
+//                    Timber.e("MOVE currY: %d, newY: %d", getScrollY(), scroller.getCurrY());
+//                    int newY = currentScrollY + deltaY;
+//                    if (!isWithinScrollRange(newY)) {
+//                        if (scroller.springBack(getScrollX(), getScrollY(), 0, getWidth(), minScrollY, maxScrollY)) {
+////                            Timber.e("springBack: ");
+//                        }
+//                    }
+
+                    scrollOrSpringBack(deltaY);
+                    postInvalidateOnAnimation();
+
+//                    currentScrollY = (int) ((float) currentScrollY + dy);
+//                    if (!loopEnabled) {
+//                        float itemHeightHalf = itemHeight / 2;
+//                        if (currentScrollY < itemHeightHalf) {
+//                            currentScrollY = (int) (itemHeightHalf);
+//                        }
+//                    }
+//
+//                    final int oldY = mScrollY;
+//                    final int range = getScrollRange();
+//                    final int overScrollMode = getOverScrollMode();
+//                    boolean canOverScroll = overScrollMode == OVER_SCROLL_ALWAYS || (overScrollMode == OVER_SCROLL_IF_CONTENT_SCROLLS && range > 0);
+
+                    // Calling overScrollBy will call onOverScrolled, which
+                    // calls onScrollChanged if applicable.
+//                    if (overScrollBy(0, deltaY, 0, mScrollY, 0, range, 0, mOverscrollDistance, true) && !hasNestedScrollingParent()) {
+//                        // Break our velocity if we hit a scroll barrier.
+//                        mVelocityTracker.clear();
+//                    }
+//
+//                    final int scrolledDeltaY = mScrollY - oldY;
+//                    final int unconsumedY = deltaY - scrolledDeltaY;
+//                    if (dispatchNestedScroll(0, scrolledDeltaY, 0, unconsumedY, mScrollOffset)) {
+//                        lastMotionY -= mScrollOffset[1];
+//                        vtev.offsetLocation(0, mScrollOffset[1]);
+//                        mNestedYOffset += mScrollOffset[1];
+//                    } else if (canOverScroll) {
+//                        final int pulledToY = oldY + deltaY;
+//                        if (pulledToY < 0) {
+//                            mEdgeGlowTop.onPull((float) deltaY / getHeight(),
+//                                    ev.getX(activePointerIndex) / getWidth());
+//                            if (!mEdgeGlowBottom.isFinished()) {
+//                                mEdgeGlowBottom.onRelease();
+//                            }
+//                        } else if (pulledToY > range) {
+//                            mEdgeGlowBottom.onPull((float) deltaY / getHeight(),
+//                                    1.f - ev.getX(activePointerIndex) / getWidth());
+//                            if (!mEdgeGlowTop.isFinished()) {
+//                                mEdgeGlowTop.onRelease();
+//                            }
+//                        }
+//                        if (shouldDisplayEdgeEffects() && (!mEdgeGlowTop.isFinished() || !mEdgeGlowBottom.isFinished())) {
+//                            postInvalidateOnAnimation();
+//                        }
+//                    }
                 }
-                return true;
+                break;
+
+            case MotionEvent.ACTION_UP:
+//                final VelocityTracker finalVelocityTracker = velocityTracker;
+//                finalVelocityTracker.computeCurrentVelocity(1000, MAXIMUM_VELOCITY);
+//                int initialVelocity = (int) finalVelocityTracker.getYVelocity();
+//                Timber.e("Velocity: %d", initialVelocity);
+//
+//                if (isBeingDragged) {
+//                    if ((Math.abs(initialVelocity) > MINIMUM_VELOCITY)) {
+////                        Timber.e("Start flinge");
+//                        // Start fling
+//                        scroller.fling(0, getScrollY(), 0, initialVelocity, 0, getWidth(), minScrollY, maxScrollY);
+////                        flingWithNestedDispatch(-initialVelocity);
+////                    } else if (mScroller.springBack(mScrollX, mScrollY, 0, 0, 0, getScrollRange())) {
+//                    } else {
+//                    }
+//                    postInvalidateOnAnimation();
+//
+//                    endDrag();
+//                }
+                break;
         }
 
-        if (!loopEnabled) {
-            int length = (int) (itemHeight * (displayableItemCount + items.size() - 2) + itemHeight / 2);
-            length += measuredHeight;
-            if (currentScrollY >= maxScrollY) {
-                currentScrollY = maxScrollY;
-            }
-        }
-        invalidate();
-
-        if (!gestureDetector.onTouchEvent(motionevent) && motionevent.getAction() == MotionEvent.ACTION_UP) {
-            settlePosition();
-        }
         return true;
     }
     // </editor-fold>
+
+    private class SettleRunnable implements Runnable {
+        @Override
+        public void run() {
+
+        }
+    }
 
 
     // ====================================================================================================================================================================================
     // <editor-fold desc="Methods">
 
+
+    @Override
+    public void computeScroll() {
+        // If computeScrollOffset returns true, that means animating a fling hasn't finished yet
+        if (scroller.computeScrollOffset()) {
+            int oldY = getScrollY();
+            int currY = scroller.getCurrY();
+            Timber.e("computeScroll: %d, %d",oldY,currY);
+
+//            scrollTo(0, currY);
+//            onScrollChanged(0, currY, 0, oldY);
+            postInvalidate();
+        }
+    }
+
+    private void scrollOrSpringBack(int deltaY) {
+        int newY = currentScrollY + deltaY;
+        if (isWithinScrollRange(newY)) {
+            currentScrollY += deltaY;
+        } else {
+            springBack(newY);
+        }
+
+    }
+
+    private void springBack(int newY) {
+        if (newY <= minScrollY) {
+            currentScrollY = minScrollY;
+        } else if (newY >= maxScrollY) {
+            currentScrollY = maxScrollY;
+        }
+    }
+
+    private void endDrag() {
+        isBeingDragged = false;
+        recycleVelocityTracker();
+    }
+
+    private void initOrResetVelocityTracker() {
+        if (velocityTracker == null) {
+            velocityTracker = VelocityTracker.obtain();
+        } else {
+            velocityTracker.clear();
+        }
+    }
+
+    private void initVelocityTrackerIfNotExists() {
+        if (velocityTracker == null) {
+            velocityTracker = VelocityTracker.obtain();
+        }
+    }
+
+    private void recycleVelocityTracker() {
+        if (velocityTracker != null) {
+            velocityTracker.recycle();
+            velocityTracker = null;
+        }
+    }
+
     private void settlePosition() {
-        int offset = (int) ((currentScrollY) % itemHeight);
+        int offset = (int) ((currentScrollY - minScrollY) % itemHeight);
         Timber.e("smoothScroll: %d", offset);
 
         cancelFuture();
@@ -504,6 +682,39 @@ public class LoopView<T extends LoopItem> extends View {
 
     // ====================================================================================================================================================================================
     // <editor-fold desc="Getter & Setter">
+
+    public boolean isWithinScrollRange(int newY) {
+        return newY > minScrollY && newY < maxScrollY;
+    }
+
+    /**
+     * Returns the maximum scroll range
+     * <br>
+     * First and last item will always be ONLY half visible.
+     *
+     * @return Maximum scroll range
+     */
+    public int getScrollRange() {
+        return (int) (itemHeight * (getChildCountWithPlaceholder() - 1) - getHeight());
+    }
+
+    /**
+     * Returns the child count without the placeholder count
+     *
+     * @return Number of children excl. placeholder
+     */
+    public int getChildCount() {
+        return items != null ? items.size() : 0;
+    }
+
+    /**
+     * Returns the child count including the placeholder count for non-looped views
+     *
+     * @return Number of children incl. placeholder
+     */
+    public int getChildCountWithPlaceholder() {
+        return getChildCount() + (loopEnabled ? 0 : displayableItemCount / 2);
+    }
 
     public void setItems(List<T> items) {
         this.items = items;

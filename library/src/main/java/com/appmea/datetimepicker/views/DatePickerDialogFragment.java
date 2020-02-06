@@ -404,7 +404,7 @@ public class DatePickerDialogFragment extends DialogFragment {
 
     private List<StringLoopItem> createDays(int min, int max) {
         List<StringLoopItem> days = new ArrayList<>();
-        for (int i = min; i <= 5; i++) {
+        for (int i = min; i <= max; i++) {
             days.add(new StringLoopItem(String.valueOf(i)));
         }
 
