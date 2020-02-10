@@ -73,11 +73,11 @@ public class LoopView<T extends LoopItem> extends View {
     final Paint    paintSelected        = new Paint();
     final Paint    paintDivider         = new Paint();
     final Paint    paintTest            = new Paint();
-    final int      displayableItemCount = 9;
+    final int      displayableItemCount = 3;
     final String[] as                   = new String[displayableItemCount];
     final float[]  ratios               = new float[displayableItemCount];
 
-    final float lineSpacingMultiplier = 1.5F;
+    final float lineSpacingMultiplier = 3.5F;
 
     int     initPosition = -1;
     boolean loopEnabled;
@@ -96,10 +96,6 @@ public class LoopView<T extends LoopItem> extends View {
     float radius;
     float itemHeight;
     float measuredWidth;
-    int   change;
-    float y1;
-    float y2;
-    float dy;
     private float           radiantSingleItem;
     private int             lastMotionY;
     private boolean         isBeingDragged;
@@ -448,13 +444,13 @@ public class LoopView<T extends LoopItem> extends View {
                  * If being flinged and user touches, stop the fling. isFinished
                  * will be false if being flinged.
                  */
+                removeCallbacks(settle);
                 if (!scroller.isFinished()) {
                     scroller.abortAnimation();
                 }
 
                 // Remember where the motion event started
                 lastMotionY = (int) motionevent.getY();
-                y1 = motionevent.getRawY();
                 break;
 
 
@@ -478,126 +474,83 @@ public class LoopView<T extends LoopItem> extends View {
                     }
                 }
 
-
                 if (isBeingDragged) {
                     // Scroll to follow the motion event
                     lastMotionY = y;
-//                    scroller.startScroll(getScrollX(), getScrollY(), 0, deltaY);
-
-//                    scrollTo(0, scroller.getCurrY());
-//                    onScrollChanged(0, scroller.getCurrY(), 0, getScrollY());
-
-
-//                    Timber.e("MOVE currY: %d, newY: %d", getScrollY(), scroller.getCurrY());
-//                    int newY = currentScrollY + deltaY;
-//                    if (!isWithinScrollRange(newY)) {
-//                        if (scroller.springBack(getScrollX(), getScrollY(), 0, getWidth(), minScrollY, maxScrollY)) {
-////                            Timber.e("springBack: ");
-//                        }
-//                    }
-
                     scrollOrSpringBack(deltaY);
                     postInvalidateOnAnimation();
-
-//                    currentScrollY = (int) ((float) currentScrollY + dy);
-//                    if (!loopEnabled) {
-//                        float itemHeightHalf = itemHeight / 2;
-//                        if (currentScrollY < itemHeightHalf) {
-//                            currentScrollY = (int) (itemHeightHalf);
-//                        }
-//                    }
-//
-//                    final int oldY = mScrollY;
-//                    final int range = getScrollRange();
-//                    final int overScrollMode = getOverScrollMode();
-//                    boolean canOverScroll = overScrollMode == OVER_SCROLL_ALWAYS || (overScrollMode == OVER_SCROLL_IF_CONTENT_SCROLLS && range > 0);
-
-                    // Calling overScrollBy will call onOverScrolled, which
-                    // calls onScrollChanged if applicable.
-//                    if (overScrollBy(0, deltaY, 0, mScrollY, 0, range, 0, mOverscrollDistance, true) && !hasNestedScrollingParent()) {
-//                        // Break our velocity if we hit a scroll barrier.
-//                        mVelocityTracker.clear();
-//                    }
-//
-//                    final int scrolledDeltaY = mScrollY - oldY;
-//                    final int unconsumedY = deltaY - scrolledDeltaY;
-//                    if (dispatchNestedScroll(0, scrolledDeltaY, 0, unconsumedY, mScrollOffset)) {
-//                        lastMotionY -= mScrollOffset[1];
-//                        vtev.offsetLocation(0, mScrollOffset[1]);
-//                        mNestedYOffset += mScrollOffset[1];
-//                    } else if (canOverScroll) {
-//                        final int pulledToY = oldY + deltaY;
-//                        if (pulledToY < 0) {
-//                            mEdgeGlowTop.onPull((float) deltaY / getHeight(),
-//                                    ev.getX(activePointerIndex) / getWidth());
-//                            if (!mEdgeGlowBottom.isFinished()) {
-//                                mEdgeGlowBottom.onRelease();
-//                            }
-//                        } else if (pulledToY > range) {
-//                            mEdgeGlowBottom.onPull((float) deltaY / getHeight(),
-//                                    1.f - ev.getX(activePointerIndex) / getWidth());
-//                            if (!mEdgeGlowTop.isFinished()) {
-//                                mEdgeGlowTop.onRelease();
-//                            }
-//                        }
-//                        if (shouldDisplayEdgeEffects() && (!mEdgeGlowTop.isFinished() || !mEdgeGlowBottom.isFinished())) {
-//                            postInvalidateOnAnimation();
-//                        }
-//                    }
                 }
                 break;
 
             case MotionEvent.ACTION_UP:
-//                final VelocityTracker finalVelocityTracker = velocityTracker;
-//                finalVelocityTracker.computeCurrentVelocity(1000, MAXIMUM_VELOCITY);
-//                int initialVelocity = (int) finalVelocityTracker.getYVelocity();
-//                Timber.e("Velocity: %d", initialVelocity);
-//
-//                if (isBeingDragged) {
-//                    if ((Math.abs(initialVelocity) > MINIMUM_VELOCITY)) {
-////                        Timber.e("Start flinge");
-//                        // Start fling
+                velocityTracker.addMovement(motionevent);
+                final VelocityTracker finalVelocityTracker = velocityTracker;
+                finalVelocityTracker.computeCurrentVelocity(1000, MAXIMUM_VELOCITY);
+                int initialVelocity = (int) finalVelocityTracker.getYVelocity();
+                Timber.e("Velocity: %d", initialVelocity);
+
+                if (isBeingDragged) {
+                    if ((Math.abs(initialVelocity) > MINIMUM_VELOCITY)) {
+                        Timber.e("Start FLING");
+                        // Start fling
 //                        scroller.fling(0, getScrollY(), 0, initialVelocity, 0, getWidth(), minScrollY, maxScrollY);
-////                        flingWithNestedDispatch(-initialVelocity);
-////                    } else if (mScroller.springBack(mScrollX, mScrollY, 0, 0, 0, getScrollRange())) {
-//                    } else {
-//                    }
-//                    postInvalidateOnAnimation();
-//
-//                    endDrag();
-//                }
+//                        flingWithNestedDispatch(-initialVelocity);
+//                    } else if (mScroller.springBack(mScrollX, mScrollY, 0, 0, 0, getScrollRange())) {
+                        post(settle);
+                    } else {
+                        Timber.e("Start SETTLE");
+                        post(settle);
+                    }
+
+                    endDrag();
+                }
                 break;
         }
-
         return true;
     }
     // </editor-fold>
 
-    private class SettleRunnable implements Runnable {
+
+    private Runnable settle = new Runnable() {
         @Override
         public void run() {
+            int deltaY = (int) ((currentScrollY - minScrollY) % itemHeight);
+            if (deltaY > itemHeight / 2) {
+                deltaY = (int) (itemHeight - deltaY);
+            } else {
+                deltaY = -deltaY;
+            }
 
+            int tenth = (int) (itemHeight * 0.1);
+            boolean finished = true;
+            int realDelta;
+
+            // If deltaY negative => need to scroll up
+            if (deltaY < 0) {
+                realDelta = Math.max(-tenth, deltaY);
+                if (realDelta < -tenth) {
+                    finished = false;
+                }
+            } else {
+                realDelta = Math.min(tenth, deltaY);
+                if (realDelta <= tenth) {
+                    finished = false;
+                }
+            }
+
+            scrollOrSpringBack(realDelta);
+            postInvalidateOnAnimation();
+
+            if (!finished) {
+                postDelayed(this, 700);
+            }
         }
-    }
+    };
 
 
     // ====================================================================================================================================================================================
     // <editor-fold desc="Methods">
 
-
-    @Override
-    public void computeScroll() {
-        // If computeScrollOffset returns true, that means animating a fling hasn't finished yet
-        if (scroller.computeScrollOffset()) {
-            int oldY = getScrollY();
-            int currY = scroller.getCurrY();
-            Timber.e("computeScroll: %d, %d",oldY,currY);
-
-//            scrollTo(0, currY);
-//            onScrollChanged(0, currY, 0, oldY);
-            postInvalidate();
-        }
-    }
 
     private void scrollOrSpringBack(int deltaY) {
         int newY = currentScrollY + deltaY;
