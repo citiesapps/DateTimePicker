@@ -62,7 +62,7 @@ public class LoopView<T extends LoopItem> extends View {
     int          maxScrollY;
     LoopListener loopListener;
 
-    List<T> items;
+    List<T> items = new ArrayList<>();
     private T selectedItem;
 
 
@@ -70,6 +70,9 @@ public class LoopView<T extends LoopItem> extends View {
     final Paint    paintSelected        = new Paint();
     final Paint    paintDivider         = new Paint();
     final Paint    paintTest            = new Paint();
+    /**
+     * Need to be an odd number TODO: add check on init when making this variable
+     */
     final int      displayableItemCount = 7;
     final String[] as                   = new String[displayableItemCount];
     final float[]  ratios               = new float[displayableItemCount];
@@ -89,6 +92,10 @@ public class LoopView<T extends LoopItem> extends View {
     int   colorDivider;
     float firstLineY;
     float secondLineY;
+    /**
+     * Index of the top most item.
+     * <b>Note:</b> this is not the selected one, as top/bottom gets filled with empty items if loop is disabled
+     */
     int   preCurrentIndex;
     float measuredHeight;
     float halfCircumference;
@@ -99,6 +106,9 @@ public class LoopView<T extends LoopItem> extends View {
     private int             lastMotionY;
     private boolean         isBeingDragged;
     private VelocityTracker velocityTracker;
+    /**
+     * Step size used for settling animation
+     */
     private int             fraction;
     private FlingRunnable   flingRunnable;
     private boolean         animationFinished;
@@ -162,12 +172,15 @@ public class LoopView<T extends LoopItem> extends View {
         }
 
         mode = ON_SETTLE;
+
         initPaint(paintText, colorText);
         initPaint(paintSelected, colorTextSelected);
         initPaint(paintDivider, colorDivider);
         initPaint(paintTest, Color.GREEN);
 
         initCircularSizes();
+        initScrollAndIndex();
+        updateScrollRange();
     }
 
     private void initPaint(Paint paint, int color) {
@@ -181,6 +194,9 @@ public class LoopView<T extends LoopItem> extends View {
         measureMaxTextHeight();
 
         itemHeight = maxTextHeight * lineSpacingMultiplier;
+        fraction = (int) (itemHeight * 0.05);
+        fraction = (int) (itemHeight * 1);
+
         float angleDegree = 180f / (displayableItemCount - 1);
         // As each item has the same height
         radiantSingleItem = (float) Math.toRadians(angleDegree);
@@ -198,14 +214,7 @@ public class LoopView<T extends LoopItem> extends View {
         secondLineY = ((measuredHeight + itemHeight) / 2.0F);
     }
 
-    private void initData() {
-        if (items == null) {
-            return;
-        }
-
-        measureMaxTextWidth();
-
-
+    private void initScrollAndIndex() {
         if (initPosition == -1) {
             if (loopEnabled) {
                 initPosition = (items.size() + 1) / 2;
@@ -216,10 +225,6 @@ public class LoopView<T extends LoopItem> extends View {
 
         currentScrollY = (int) ((itemHeight * initPosition + itemHeight / 2f));
         preCurrentIndex = initPosition;
-        fraction = (int) (itemHeight * 0.05);
-
-
-        Timber.e("ItemHeight: %f, Radius: %f, TotalScrollY: %d", itemHeight, radius, currentScrollY);
     }
 
     private void measureMaxTextHeight() {
@@ -237,6 +242,22 @@ public class LoopView<T extends LoopItem> extends View {
                 maxTextWidth = textWidth;
             }
         }
+    }
+
+
+    private void updateScrollRange() {
+        minScrollY = (int) (itemHeight / 2);
+        maxScrollY = Math.max(minScrollY, (int) (itemHeight * (-0.5 + items.size())));
+
+        // Sanity check
+        if (currentScrollY < minScrollY) {
+            currentScrollY = minScrollY;
+        }
+
+        if (currentScrollY > maxScrollY) {
+            currentScrollY = maxScrollY;
+        }
+        Timber.e("updateScrollRange: MinScroll: %d, MaxScroll: %d", minScrollY, maxScrollY);
     }
     // </editor-fold>
 
@@ -256,8 +277,6 @@ public class LoopView<T extends LoopItem> extends View {
 
         setMeasuredDimension(measureDimension(maxWidth, widthMeasureSpec), measureDimension(maxHeight, heightMeasureSpec));
         measuredWidth = getMeasuredWidth();
-
-        updateScrollHeight();
     }
 
     private int measureDimension(int desiredSize, int measureSpec) {
@@ -543,6 +562,7 @@ public class LoopView<T extends LoopItem> extends View {
             if (finished) {
                 selectItemBasedOnScroll(currentScrollY);
                 animationFinished = true;
+                removeCallbacks(this);
                 return;
             }
             postDelayed(this, 10);
@@ -582,6 +602,7 @@ public class LoopView<T extends LoopItem> extends View {
             }
 
 
+            Timber.e("run: %d", limitedVelocity);
             if (Math.abs(limitedVelocity) >= 0.0F && Math.abs(limitedVelocity) <= MINIMUM_VELOCITY) {
                 removeCallbacks(this);
                 post(settle);
@@ -595,9 +616,11 @@ public class LoopView<T extends LoopItem> extends View {
                 limitedVelocity = limitedVelocity - VELOCITY_REDUCER;
             }
 
-            scrollOrSpringBack(-i);
             postInvalidateOnAnimation();
-            postDelayed(this, 10);
+
+            if (scrollOrSpringBack(-i)) {
+                postDelayed(this, 10);
+            }
         }
     }
 
@@ -662,12 +685,20 @@ public class LoopView<T extends LoopItem> extends View {
         post(flingRunnable);
     }
 
-    private void scrollOrSpringBack(int deltaY) {
+    /**
+     * Scrolls the given deltaY of sets {@link #currentScrollY} to the bounds {@link #minScrollY}, {@link #maxScrollY} if it would exceed the boundaries
+     *
+     * @param deltaY The value to scroll
+     * @return True if scrolling was possible; False if new scroll would be outside range and was trimmed to the boundaries
+     */
+    private boolean scrollOrSpringBack(int deltaY) {
         int newY = currentScrollY + deltaY;
         if (isWithinScrollRange(newY)) {
             currentScrollY += deltaY;
+            return true;
         } else {
             springBack(newY);
+            return false;
         }
     }
 
@@ -768,24 +799,6 @@ public class LoopView<T extends LoopItem> extends View {
         return loopEnabled ? 0 : displayableItemCount / 2;
     }
 
-    public void setItems(List<T> items) {
-        this.items = items;
-        if (items != null) {
-            if (!items.isEmpty()) {
-                this.initPosition = Math.min(items.size() - 1, initPosition);
-                Timber.e("setItems: %d", initPosition);
-            }
-        }
-
-        initData();
-        requestLayout();
-    }
-
-    public void updateItems(List<T> items) {
-        this.items = items;
-        updateScrollHeight();
-        requestLayout();
-    }
 
     @Nullable
     public T getItem(int position) {
@@ -796,23 +809,51 @@ public class LoopView<T extends LoopItem> extends View {
         return items.get(position);
     }
 
-    public void setLoopEnabled(boolean enabled) {
-        loopEnabled = enabled;
-    }
 
-    public final void setListener(LoopListener LoopListener) {
-        loopListener = LoopListener;
-    }
+    /**
+     * Initializes the LoopView with multiple values at once<br>
+     * Use this method instead of calls to update...(), as those will call invalidate()/requestLayout() for every operation
+     *
+     * @param initializer The inner class {@link Initializer} containing the initial values
+     */
+    public void initialize(Initializer initializer) {
+        if (initializer.listener != null) {
+            this.loopListener = initializer.listener;
+        }
 
-    public void setMode(@Mode int mode) {
-        this.mode = mode;
-    }
+        if (initializer.items != null) {
+            this.items = initializer.items;
+        }
 
+        if (initializer.loopEnabled != null) {
+            this.loopEnabled = initializer.loopEnabled;
+        }
 
-    private void updateScrollHeight() {
-        minScrollY = (int) (itemHeight / 2);
-        maxScrollY = (int) (itemHeight * (-0.5 + items.size()));
-        Timber.e("MinScroll: %d, MaxScroll: %d", minScrollY, maxScrollY);
+        if (initializer.initPosition != null) {
+            this.initPosition = initializer.initPosition;
+        }
+
+        if (initializer.textSize != null) {
+            this.textSize = initializer.textSize;
+
+            initPaint(paintText, colorText);
+            initPaint(paintSelected, colorTextSelected);
+            initPaint(paintDivider, colorDivider);
+        }
+
+        if (initializer.mode != null) {
+            this.mode = initializer.mode;
+        }
+
+        initCircularSizes();
+        initScrollAndIndex();
+        updateScrollRange();
+
+        if (initializer.textSize != null) {
+            requestLayout();
+        } else {
+            invalidate();
+        }
     }
     // </editor-fold>
 
@@ -820,7 +861,78 @@ public class LoopView<T extends LoopItem> extends View {
     // ====================================================================================================================================================================================
     // <editor-fold desc="TODO CHECK">
 
-    public void setTextSize(int textSize) {
+    public void setLoopEnabled(boolean enabled) {
+        loopEnabled = enabled;
+    }
+    // </editor-fold>
+
+
+    /**
+     * Initializer class to initialize the {@link LoopView} with multiple values at once, to prevent multiple calls to invalidate()/requestLayout()
+     */
+    public class Initializer {
+        @Nullable private LoopListener listener;
+        @Nullable private List<T>      items;
+        @Nullable private Integer      textSize;
+        @Nullable private Integer      initPosition;
+        @Nullable private Boolean      loopEnabled;
+        @Nullable private Integer      mode;
+
+        public Initializer items(List<T> items) {
+            this.items = items;
+            return this;
+        }
+
+        public Initializer loopEnabled(boolean loopEnabled) {
+            this.loopEnabled = loopEnabled;
+            return this;
+        }
+
+        public Initializer textSize(int textSize) {
+            this.textSize = textSize;
+            return this;
+        }
+
+        public Initializer initPosition(int initPosition) {
+            this.initPosition = initPosition;
+            return this;
+        }
+
+        public Initializer listener(LoopListener listener) {
+            this.listener = listener;
+            return this;
+        }
+
+        public Initializer mode(@Mode int mode) {
+            this.mode = mode;
+            return this;
+        }
+    }
+
+
+    // ====================================================================================================================================================================================
+    // <editor-fold desc="Updates">
+
+    public void updateItems(List<T> items) {
+        int countBeforeUpdate = getChildCount();
+        int indexBeforeUpdate = getIndexOfItem(currentScrollY);
+        Timber.e("updateItems: %d", indexBeforeUpdate);
+        this.items = items;
+        updateScrollRange();
+        updateCurrentScrollY(indexBeforeUpdate, countBeforeUpdate);
+
+        invalidate();
+    }
+
+    private void updateCurrentScrollY(int indexBeforeUpdate, int countBeforeUpdate) {
+        if (indexBeforeUpdate == 0) {
+            currentScrollY = minScrollY;
+        } else if (indexBeforeUpdate == countBeforeUpdate - 1) {
+            currentScrollY = maxScrollY;
+        }
+    }
+
+    public void updateTextSize(int textSize) {
         if (this.textSize != textSize) {
             this.textSize = textSize;
             initPaint(paintText, colorText);
@@ -828,11 +940,13 @@ public class LoopView<T extends LoopItem> extends View {
             initPaint(paintDivider, colorDivider);
 
             initCircularSizes();
+            initScrollAndIndex();
+            updateScrollRange();
             requestLayout();
         }
     }
 
-    public final void setInitPosition(int initPosition) {
+    public final void updateInitPosition(int initPosition) {
         if (items != null) {
             if (items.isEmpty()) {
                 return;
@@ -845,5 +959,15 @@ public class LoopView<T extends LoopItem> extends View {
         this.initPosition = initPosition;
         invalidate();
     }
+
+    public final void setListener(LoopListener LoopListener) {
+        loopListener = LoopListener;
+    }
+
+    public void setMode(@Mode int mode) {
+        this.mode = mode;
+    }
     // </editor-fold>
+
 }
+

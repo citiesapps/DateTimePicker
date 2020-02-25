@@ -64,8 +64,6 @@ public class DatePickerDialogFragment extends DialogFragment {
     // ====================================================================================================================================================================================
     // <editor-fold desc="Properties">
 
-    private Context context;
-
     private List<StringLoopItem> finalYears;
     private List<StringLoopItem> finalMonths;
     private List<StringLoopItem> finalDays;
@@ -220,7 +218,6 @@ public class DatePickerDialogFragment extends DialogFragment {
     @Override
     public void onAttach(@NotNull Context context) {
         super.onAttach(context);
-        this.context = context;
 
 //        // Parent is a fragment (getParentFragment() returns null, if no parent fragment exists and is directly attached to an activity
 //        if (getParentFragment() instanceof ConnectDialogListener) {
@@ -234,7 +231,6 @@ public class DatePickerDialogFragment extends DialogFragment {
 
     @Override
     public void onDetach() {
-        context = null;
         super.onDetach();
     }
 
@@ -307,34 +303,39 @@ public class DatePickerDialogFragment extends DialogFragment {
 
     private void initLoopViews() {
         if ((fields & FIELD_YEAR) != 0) {
-            years = createYears(minDateTime.getYear(), maxDateTime.getYear());
-            lvYear.setItems(years);
             lvYear.setVisibility(View.VISIBLE);
-            lvYear.setLoopEnabled((loops & LOOP_YEAR) != 0);
-            lvYear.setListener(this::handleYearSelected);
-//            lvYear.setInitPosition(0);//calcInitYear());
-            lvYear.setInitPosition(calcInitYear());
-            lvYear.setTextSize(textSizeDP);
+            years = createYears(minDateTime.getYear(), maxDateTime.getYear());
+            lvYear.initialize(lvYear.new Initializer()
+                    .items(years)
+                    .loopEnabled((loops & LOOP_YEAR) != 0)
+                    .listener(this::handleYearSelected)
+                    .initPosition(calcInitYear())
+                    .textSize(textSizeDP)
+            );
         }
 
         if ((fields & FIELD_MONTH) != 0) {
-            months = createMonths(minDateTime.getMonthOfYear(), calcInitMaxMonth());
-            lvMonth.setItems(months);
             lvMonth.setVisibility(View.VISIBLE);
-            lvMonth.setLoopEnabled((loops & LOOP_MONTH) != 0);
-            lvMonth.setListener(this::handleMonthSelected);
-            lvMonth.setInitPosition(calcInitMonth());
-            lvMonth.setTextSize(textSizeDP);
+            months = createMonths(minDateTime.getMonthOfYear(), calcInitMaxMonth());
+            lvMonth.initialize(lvMonth.new Initializer()
+                    .items(months)
+                    .loopEnabled((loops & LOOP_MONTH) != 0)
+                    .listener(this::handleMonthSelected)
+                    .initPosition(calcInitMonth())
+                    .textSize(textSizeDP)
+            );
         }
 
         if ((fields & FIELD_DAY) != 0) {
-            days = createDays(minDateTime.getDayOfMonth(), calcInitMaxDay());
-            lvDay.setItems(days);
             lvDay.setVisibility(View.VISIBLE);
-            lvDay.setLoopEnabled((loops & LOOP_DAY) != 0);
-            lvDay.setListener(this::handleDaySelected);
-            lvDay.setInitPosition(calcInitDay());
-            lvDay.setTextSize(textSizeDP);
+            days = createDays(minDateTime.getDayOfMonth(), calcInitMaxDay());
+            lvDay.initialize(lvDay.new Initializer()
+                    .listener(this::handleDaySelected)
+                    .items(days)
+                    .initPosition(calcInitDay())
+                    .initPosition(2)
+                    .textSize(textSizeDP)
+                    .loopEnabled((loops & LOOP_DAY) != 0));
         }
     }
 
@@ -420,6 +421,7 @@ public class DatePickerDialogFragment extends DialogFragment {
     // <editor-fold desc="Methods">
 
     private void handleYearSelected(LoopItem item) {
+        Timber.e("handleYearSelected: ");
         int currentYear = selectedDateTime.getYear();
         int newYear = Integer.parseInt(item.getText());
 
@@ -445,8 +447,7 @@ public class DatePickerDialogFragment extends DialogFragment {
     }
 
     private void handleDaySelected(LoopItem item) {
-        Timber.e("handleDaySelected: %s", item.getText());
-//        selectedDateTime = selectedDateTime.dayOfMonth().setCopy(item.getText());
+        selectedDateTime = selectedDateTime.dayOfMonth().setCopy(item.getText());
     }
 
 

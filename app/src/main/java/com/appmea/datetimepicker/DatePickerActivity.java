@@ -34,7 +34,7 @@ public class DatePickerActivity extends AppCompatActivity {
                     new DatePickerDialogFragment.Builder()
                             .withFields(FIELD_ALL)
                             .withLoops(NONE)
-                            .withMinDateTime(new DateTime(2000, 1, 1, 12, 0))
+                            .withMinDateTime(new DateTime(1950, 1, 10, 12, 0))
                             .withMaxDateTime(new DateTime(2003, 8, 21, 12, 0))
                             .withTextSize((int) (getResources().getDisplayMetrics().density * 24))
             );
