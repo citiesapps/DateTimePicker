@@ -195,7 +195,6 @@ public class LoopView<T extends LoopItem> extends View {
 
         itemHeight = maxTextHeight * lineSpacingMultiplier;
         fraction = (int) (itemHeight * 0.05);
-        fraction = (int) (itemHeight * 1);
 
         float angleDegree = 180f / (displayableItemCount - 1);
         // As each item has the same height
@@ -441,6 +440,12 @@ public class LoopView<T extends LoopItem> extends View {
         }
         // </editor-fold>
 
+        if (loopListener != null) {
+            int index = getIndexOfItem(currentScrollY);
+            if (index != NO_POSITION) {
+                loopListener.onItemScrolled(getItem(index));
+            }
+        }
         super.onDraw(canvas);
     }
 
@@ -602,7 +607,6 @@ public class LoopView<T extends LoopItem> extends View {
             }
 
 
-            Timber.e("run: %d", limitedVelocity);
             if (Math.abs(limitedVelocity) >= 0.0F && Math.abs(limitedVelocity) <= MINIMUM_VELOCITY) {
                 removeCallbacks(this);
                 post(settle);
@@ -620,6 +624,10 @@ public class LoopView<T extends LoopItem> extends View {
 
             if (scrollOrSpringBack(-i)) {
                 postDelayed(this, 10);
+            } else {
+                selectItemBasedOnScroll(currentScrollY);
+                animationFinished = true;
+                removeCallbacks(this);
             }
         }
     }
@@ -660,7 +668,7 @@ public class LoopView<T extends LoopItem> extends View {
             int index = getIndexOfItem(scrollY);
             if (index != NO_POSITION) {
                 selectedItem = items.get(index);
-                loopListener.onItemSelect(selectedItem);
+                loopListener.onItemSettled(selectedItem);
             }
         }
     }
@@ -738,7 +746,7 @@ public class LoopView<T extends LoopItem> extends View {
 
     private void onItemSelected(LoopItem item) {
         if (loopListener != null) {
-            loopListener.onItemSelect(item);
+            loopListener.onItemSettled(item);
         }
     }
 

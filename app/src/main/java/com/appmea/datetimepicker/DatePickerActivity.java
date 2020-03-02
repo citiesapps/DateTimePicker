@@ -1,8 +1,7 @@
 package com.appmea.datetimepicker;
 
 import android.os.Bundle;
-import android.view.Window;
-import android.view.WindowManager;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -17,14 +16,14 @@ import static com.appmea.datetimepicker.views.DatePickerDialogFragment.FIELD_ALL
 import static com.appmea.datetimepicker.views.DatePickerDialogFragment.NONE;
 
 
-public class DatePickerActivity extends AppCompatActivity {
+public class DatePickerActivity extends AppCompatActivity implements DateSelectListener {
+
+    private Toast toast;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Timber.plant(new Timber.DebugTree());
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
-        this.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_date_picker);
         ButterKnife.bind(this);
 
@@ -35,9 +34,18 @@ public class DatePickerActivity extends AppCompatActivity {
                             .withFields(FIELD_ALL)
                             .withLoops(NONE)
                             .withMinDateTime(new DateTime(1950, 1, 10, 12, 0))
-                            .withMaxDateTime(new DateTime(2003, 8, 21, 12, 0))
+//                            .withMaxDateTime(new DateTime(2015, 4, 23, 12, 0))
                             .withTextSize((int) (getResources().getDisplayMetrics().density * 24))
             );
         });
+    }
+
+    @Override
+    public void onDateSelected(DateTime dateTime) {
+        if (toast != null) {
+            toast.cancel();
+        }
+        toast = Toast.makeText(this, Utils.getDayOfWeekMonthAbbrYearTime().print(dateTime), Toast.LENGTH_SHORT);
+        toast.show();
     }
 }
