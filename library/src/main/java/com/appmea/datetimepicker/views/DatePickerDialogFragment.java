@@ -4,6 +4,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.res.Resources;
 import android.os.Bundle;
+import android.text.format.DateFormat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,6 +13,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
@@ -24,25 +26,32 @@ import com.appmea.datetimepicker.LoopListener;
 import com.appmea.datetimepicker.LoopView;
 import com.appmea.datetimepicker.R;
 import com.appmea.datetimepicker.R2;
-import com.appmea.datetimepicker.StringLoopItem;
 import com.appmea.datetimepicker.Utils;
+import com.appmea.datetimepicker.items.MonthLoopItem;
+import com.appmea.datetimepicker.items.StringLoopItem;
 
 import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import timber.log.Timber;
 
+import static com.appmea.datetimepicker.Constants.ARGUMENT_BUTTON_TITLE;
+import static com.appmea.datetimepicker.Constants.ARGUMENT_COLOR_BUTTON;
+import static com.appmea.datetimepicker.Constants.ARGUMENT_COLOR_TEXT;
+import static com.appmea.datetimepicker.Constants.ARGUMENT_COLOR_TEXT_SELECTED;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_FIELDS;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_LOOPS;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_MAX_DATE_TIME;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_MIN_DATE_TIME;
+import static com.appmea.datetimepicker.Constants.ARGUMENT_SELECTED_DATE_TIME;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_TEXT_SIZE;
+import static com.appmea.datetimepicker.Constants.ARGUMENT_TITLE;
 import static com.appmea.datetimepicker.Constants.TAG_DTP_DIALOG_FRAGMENT;
 
 
@@ -72,16 +81,21 @@ public class DatePickerDialogFragment extends DialogFragment {
     // <editor-fold desc="Properties">
 
     private List<StringLoopItem> finalYears;
-    private List<StringLoopItem> finalMonths;
+    private List<MonthLoopItem>  finalMonths;
     private List<StringLoopItem> finalDays;
 
     private List<StringLoopItem> years;
-    private List<StringLoopItem> months;
+    private List<MonthLoopItem>  months;
     private List<StringLoopItem> days;
 
-    private int fields;
-    private int loops;
-    private int textSizeDP;
+    private int    fields;
+    private int    loops;
+    private String title;
+    private String titleButton;
+    private int    textSizeDP;
+    private int    colorText;
+    private int    colorTextSelected;
+    private int    colorButton;
 
     private DateTime maxDateTime;
     private DateTime minDateTime;
@@ -90,10 +104,12 @@ public class DatePickerDialogFragment extends DialogFragment {
     private View               view;
     private DateSelectListener listener;
 
+    @BindView(R2.id.tv_title)  TextView                 tvTitle;
     @BindView(R2.id.tv_date)   TextView                 tvDate;
     @BindView(R2.id.lv_years)  LoopView<StringLoopItem> lvYear;
-    @BindView(R2.id.lv_months) LoopView<StringLoopItem> lvMonth;
+    @BindView(R2.id.lv_months) LoopView<MonthLoopItem>  lvMonth;
     @BindView(R2.id.lv_days)   LoopView<StringLoopItem> lvDay;
+    @BindView(R2.id.tv_cancel) TextView                 tvCancel;
     @BindView(R2.id.tv_select) TextView                 tvSelect;
     // </editor-fold>
 
@@ -129,11 +145,28 @@ public class DatePickerDialogFragment extends DialogFragment {
         DatePickerDialogFragment fragment = new DatePickerDialogFragment();
 
         Bundle arguments = new Bundle();
+
+        if (builder.titleRes != 0) {
+            arguments.putInt(ARGUMENT_TITLE, builder.titleRes);
+        } else if (builder.titleString != null) {
+            arguments.putString(ARGUMENT_TITLE, builder.titleString);
+        }
+
+        if (builder.buttonTextRes != 0) {
+            arguments.putInt(ARGUMENT_BUTTON_TITLE, builder.buttonTextRes);
+        } else if (builder.buttonTextString != null) {
+            arguments.putString(ARGUMENT_BUTTON_TITLE, builder.buttonTextString);
+        }
+
         arguments.putInt(Constants.ARGUMENT_FIELDS, builder.fields);
         arguments.putInt(ARGUMENT_LOOPS, builder.loops);
         arguments.putInt(ARGUMENT_TEXT_SIZE, builder.textSizeDP);
+        arguments.putInt(ARGUMENT_COLOR_TEXT, builder.colorText);
+        arguments.putInt(ARGUMENT_COLOR_TEXT_SELECTED, builder.colorSelectedText);
+        arguments.putInt(ARGUMENT_COLOR_BUTTON, builder.colorButton);
         arguments.putSerializable(ARGUMENT_MIN_DATE_TIME, builder.minDateTime);
         arguments.putSerializable(ARGUMENT_MAX_DATE_TIME, builder.maxDateTime);
+        arguments.putSerializable(ARGUMENT_SELECTED_DATE_TIME, builder.selectedDateTime);
 
         fragment.setArguments(arguments);
         return fragment;
@@ -152,11 +185,21 @@ public class DatePickerDialogFragment extends DialogFragment {
         // ====================================================================================================================================================================================
         // <editor-fold desc="Properties">
 
-        int      fields      = FIELD_ALL;
-        int      loops       = NONE;
-        int      textSizeDP  = (int) (16 * Resources.getSystem().getDisplayMetrics().density);
-        DateTime maxDateTime = new DateTime().plusYears(100);
-        DateTime minDateTime = new DateTime(1900, 1, 1, 0, 0);
+        int      fields            = FIELD_ALL;
+        int      loops             = NONE;
+        int      textSizeDP        = (int) (16 * Resources.getSystem().getDisplayMetrics().density);
+        int      colorText         = 0XFFAFAFAF;
+        int      colorSelectedText = 0XFF000000;
+        int      colorButton       = 0XFF000000;
+        DateTime minDateTime       = new DateTime(1900, 1, 1, 0, 0);
+        DateTime maxDateTime       = new DateTime().plusYears(100);
+        DateTime selectedDateTime  = new DateTime();
+        @StringRes
+        private int    titleRes;
+        private String titleString;
+        @StringRes
+        private int    buttonTextRes;
+        private String buttonTextString;
         // </editor-fold>
 
 
@@ -203,6 +246,26 @@ public class DatePickerDialogFragment extends DialogFragment {
             return this;
         }
 
+        public Builder withTitle(@StringRes int titleRes) {
+            this.titleRes = titleRes;
+            return this;
+        }
+
+        public Builder withTitle(String titleString) {
+            this.titleString = titleString;
+            return this;
+        }
+
+        public Builder withButtonText(@StringRes int buttonTextRes) {
+            this.buttonTextRes = buttonTextRes;
+            return this;
+        }
+
+        public Builder withButtonText(String buttonTextString) {
+            this.buttonTextString = buttonTextString;
+            return this;
+        }
+
         public Builder withMaxDateTime(DateTime maxDateTime) {
             this.maxDateTime = maxDateTime;
             return this;
@@ -213,8 +276,28 @@ public class DatePickerDialogFragment extends DialogFragment {
             return this;
         }
 
+        public Builder withSelectedDateTime(DateTime selectedDateTime) {
+            this.selectedDateTime = selectedDateTime;
+            return this;
+        }
+
         public Builder withTextSize(int textSizeDP) {
             this.textSizeDP = textSizeDP;
+            return this;
+        }
+
+        public Builder withTextColor(int colorText) {
+            this.colorText = colorText;
+            return this;
+        }
+
+        public Builder withSelectedTextColor(int colorSelectedText) {
+            this.colorSelectedText = colorSelectedText;
+            return this;
+        }
+
+        public Builder withButtonColor(int colorButton) {
+            this.colorButton = colorButton;
             return this;
         }
         // </editor-fold>
@@ -229,7 +312,7 @@ public class DatePickerDialogFragment extends DialogFragment {
     public void onAttach(@NotNull Context context) {
         super.onAttach(context);
 
-//        // Parent is a fragment (getParentFragment() returns null, if no parent fragment exists and is directly attached to an activity
+        // Parent is a fragment (getParentFragment() returns null, if no parent fragment exists and is directly attached to an activity
         if (getParentFragment() instanceof DateSelectListener) {
             listener = (DateSelectListener) getParentFragment();
         } else if (context instanceof DateSelectListener) {
@@ -249,41 +332,70 @@ public class DatePickerDialogFragment extends DialogFragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
+            Object o = getArguments().get(ARGUMENT_TITLE);
+            if (o instanceof String) {
+                title = (String) o;
+            } else if (o instanceof Integer) {
+                title = getString((Integer) o);
+            }
+
+            o = getArguments().get(ARGUMENT_BUTTON_TITLE);
+            if (o instanceof String) {
+                titleButton = (String) o;
+            } else if (o instanceof Integer) {
+                titleButton = getString((Integer) o);
+            }
+
             fields = getArguments().getInt(ARGUMENT_FIELDS);
             loops = getArguments().getInt(ARGUMENT_LOOPS);
             textSizeDP = getArguments().getInt(ARGUMENT_TEXT_SIZE);
+            colorText = getArguments().getInt(ARGUMENT_COLOR_TEXT);
+            colorTextSelected = getArguments().getInt(ARGUMENT_COLOR_TEXT_SELECTED);
+            colorButton = getArguments().getInt(ARGUMENT_COLOR_BUTTON);
 
             minDateTime = (DateTime) getArguments().getSerializable(ARGUMENT_MIN_DATE_TIME);
             maxDateTime = (DateTime) getArguments().getSerializable(ARGUMENT_MAX_DATE_TIME);
+            selectedDateTime = (DateTime) getArguments().getSerializable(ARGUMENT_SELECTED_DATE_TIME);
 
             if (minDateTime.isAfter(maxDateTime)) {
                 throw new IllegalArgumentException("Minimum DateTime has to be before Maximum DateTime");
             }
 
-            DateTime now = new DateTime();
-            if (now.isBefore(minDateTime)) {
+            if (selectedDateTime.isBefore(minDateTime)) {
                 selectedDateTime = minDateTime;
-            } else if (now.isAfter(maxDateTime)) {
+            } else if (selectedDateTime.isAfter(maxDateTime)) {
                 selectedDateTime = maxDateTime;
-            } else {
-                selectedDateTime = now;
             }
 
             finalYears = createDateItemList(minDateTime.getYear(), maxDateTime.getYear());
-            finalMonths = createDateItemList(1, 12);
+            finalMonths = createMonthList(1, 12);
             finalDays = createDateItemList(1, 31);
         } else {
-//            Utils.writeStarterError(this);
-            dismiss();
+            throw new IllegalArgumentException("%s: use the static starter/new instance method with appropriate parameters to create an instance of " + this.getClass().getName());
         }
     }
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        view = inflater.inflate(R.layout.dialog_dp_dialog_fragment, container);
+        boolean isGerman = DateFormat.getBestDateTimePattern(Locale.getDefault(), "MMM dd yyyy").startsWith("dd");
+
+        view = inflater.inflate(isGerman ? R.layout.dialog_dp_dialog_fragment_de : R.layout.dialog_dp_dialog_fragment_en, container);
 
         ButterKnife.bind(this, view);
+
+        if (title != null) {
+            tvTitle.setText(title);
+            tvTitle.setVisibility(View.VISIBLE);
+        }
+
+        if (titleButton != null) {
+            tvSelect.setText(titleButton);
+        }
+
+        tvSelect.setTextColor(colorButton);
+        tvCancel.setTextColor(colorButton);
+
         initLoopViews();
 
         return view;
@@ -335,12 +447,14 @@ public class DatePickerDialogFragment extends DialogFragment {
                     })
                     .initPosition(calcInitYear())
                     .textSize(textSizeDP)
+                    .textColor(colorText)
+                    .selectedTextColor(colorTextSelected)
             );
         }
 
         if (monthsEnabled()) {
             lvMonth.setVisibility(View.VISIBLE);
-            months = createDateItemList(calcInitMinMonth(), calcInitMaxMonth());
+            months = createMonthList(calcInitMinMonth(), calcInitMaxMonth());
             lvMonth.initialize(lvMonth.new Initializer()
                     .items(months)
                     .loopEnabled((loops & LOOP_MONTH) != 0)
@@ -360,6 +474,8 @@ public class DatePickerDialogFragment extends DialogFragment {
                     })
                     .initPosition(calcInitMonth())
                     .textSize(textSizeDP)
+                    .textColor(colorText)
+                    .selectedTextColor(colorTextSelected)
             );
         }
 
@@ -384,7 +500,9 @@ public class DatePickerDialogFragment extends DialogFragment {
                     .items(days)
                     .initPosition(calcInitDay())
                     .textSize(textSizeDP)
-                    .loopEnabled((loops & LOOP_DAY) != 0));
+                    .textColor(colorText)
+                    .selectedTextColor(colorTextSelected)
+            );
         }
     }
 
@@ -448,6 +566,15 @@ public class DatePickerDialogFragment extends DialogFragment {
 
         return years;
     }
+
+    private List<MonthLoopItem> createMonthList(int min, int max) {
+        List<MonthLoopItem> years = new ArrayList<>();
+        for (int i = min; i <= max; i++) {
+            years.add(new MonthLoopItem(i));
+        }
+
+        return years;
+    }
     // </editor-fold>
 
 
@@ -462,14 +589,19 @@ public class DatePickerDialogFragment extends DialogFragment {
     @OnClick(R2.id.tv_select)
     void onSelectClicked() {
         listener.onDateSelected(selectedDateTime);
+        dismiss();
+    }
+
+    @OnClick(R2.id.tv_cancel)
+    void onCancelClicked() {
+        dismiss();
     }
 
     private void updateSelectedItemText(DateTime dateTime) {
-        tvDate.setText(Utils.getDayOfWeekMonthAbbrYearTime().print(dateTime));
+        tvDate.setText(Utils.getDayMonthAbbrYearFormatter().print(dateTime));
     }
 
     private void handleYearSelected(LoopItem item) {
-        Timber.e("handleYearSelected: ");
         int currentYear = selectedDateTime.getYear();
         int newYear = Integer.parseInt(item.getText());
 
@@ -480,13 +612,19 @@ public class DatePickerDialogFragment extends DialogFragment {
 
             selectedDateTime = newDateTime;
         }
-        tvDate.setText(Utils.getDayOfWeekMonthAbbrYearTime().print(selectedDateTime));
+        tvDate.setText(Utils.getDayMonthAbbrYearFormatter().print(selectedDateTime));
     }
 
     private void handleMonthSelected(LoopItem item) {
-        Timber.e("handleMonthSelected: ");
         int currentMonth = selectedDateTime.getMonthOfYear();
-        int newMonth = Integer.parseInt(item.getText());
+
+        int newMonth = 1;
+        if (item instanceof MonthLoopItem) {
+            newMonth = ((MonthLoopItem) item).getItem();
+        } else {
+            DateTime dateTime = Utils.getMonthAbbrFormatter().parseDateTime(item.getText());
+            dateTime.getMonthOfYear();
+        }
 
         if (currentMonth != newMonth) {
             DateTime newDateTime = selectedDateTime.monthOfYear().setCopy(newMonth);
@@ -494,13 +632,12 @@ public class DatePickerDialogFragment extends DialogFragment {
 
             selectedDateTime = newDateTime;
         }
-        tvDate.setText(Utils.getDayOfWeekMonthAbbrYearTime().print(selectedDateTime));
+        tvDate.setText(Utils.getDayMonthAbbrYearFormatter().print(selectedDateTime));
     }
 
     private void handleDaySelected(LoopItem item) {
-        Timber.e("handleDaySelected: ");
         selectedDateTime = selectedDateTime.dayOfMonth().setCopy(item.getText());
-        tvDate.setText(Utils.getDayOfWeekMonthAbbrYearTime().print(selectedDateTime));
+        tvDate.setText(Utils.getDayMonthAbbrYearFormatter().print(selectedDateTime));
     }
 
 
@@ -509,8 +646,8 @@ public class DatePickerDialogFragment extends DialogFragment {
             return;
         }
 
-        int currentLowerLimit = Integer.parseInt(months.get(0).getText());
-        int currentUpperLimit = Integer.parseInt(months.get(months.size() - 1).getText());
+        int currentLowerLimit = months.get(0).getItem();
+        int currentUpperLimit = months.get(months.size() - 1).getItem();
 
         int newLowerLimit = calcLowerBoundMonths(currentLowerLimit, newDateTime);
         int newUpperLimit = calcUpperBoundMonths(currentUpperLimit, newDateTime);

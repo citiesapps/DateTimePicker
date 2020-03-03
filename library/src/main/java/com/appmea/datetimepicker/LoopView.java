@@ -9,6 +9,7 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.util.AttributeSet;
+import android.util.Pair;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
@@ -16,6 +17,8 @@ import android.view.ViewParent;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
+
+import com.appmea.datetimepicker.items.StringLoopItem;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +36,7 @@ public class LoopView<T extends LoopItem> extends View {
     private static final float DEFAULT_TEXT_SIZE = 40;
 
     private static final int DEFAULT_COLOR_TEXT          = 0XFFAFAFAF;
-    private static final int DEFAULT_COLOR_TEXT_SELECTED = 0XFF313131;
+    private static final int DEFAULT_COLOR_TEXT_SELECTED = 0XFF000000;
     private static final int DEFAULT_COLOR_DIVIDER       = 0XFFC5C5C5;
 
     private static final int TOUCH_SLOP       = 8;
@@ -106,12 +109,18 @@ public class LoopView<T extends LoopItem> extends View {
     private int             lastMotionY;
     private boolean         isBeingDragged;
     private VelocityTracker velocityTracker;
+
+    /**
+     * Index of the last item that was selected during scroll
+     */
+    private int lastScrolledIndex = -1;
+
     /**
      * Step size used for settling animation
      */
-    private int             fraction;
-    private FlingRunnable   flingRunnable;
-    private boolean         animationFinished;
+    private int           fraction;
+    private FlingRunnable flingRunnable;
+    private boolean       animationFinished;
 
     // </editor-fold>
 
@@ -397,16 +406,21 @@ public class LoopView<T extends LoopItem> extends View {
         }
 
 
-        drawLines(canvas);
+        Pair<Integer, Integer> lines = drawLines(canvas);
 
         int translation = 0;
         while (j1 < displayableItemCount) {
             canvas.save();
             canvas.translate(0.0F, translation);
+
+            int lowerY = translation;
             translation += itemHeight * ratios[j1];
+            int upperY = translation;
+
+
             canvas.scale(1.0F, ratios[j1]);
 
-            fill.setStyle(Paint.Style.FILL_AND_STROKE);
+//            fill.setStyle(Paint.Style.FILL_AND_STROKE);
 //            Beautiful
 //            if (as[j1].equals("")) {
 //                if (j1 % 2 == 0) {
@@ -421,7 +435,7 @@ public class LoopView<T extends LoopItem> extends View {
 //                    fill.setARGB(255, 0, 0, 0);
 //                }
 //            }
-
+//
 //          Functional
             if (j1 % 2 == 0) {
                 fill.setARGB(255, 255, 255, 255);
@@ -430,32 +444,87 @@ public class LoopView<T extends LoopItem> extends View {
             }
 
 
-            canvas.clipRect(0, 0, measuredWidth, itemHeight);
+            drawText(canvas, as[j1], lines, lowerY, upperY, left);
+
+//            canvas.clipRect(0, 0, measuredWidth, itemHeight);
 //            canvas.drawPaint(fill);
-            int yPos = (int) ((itemHeight / 2) - ((paintText.descent() + paintText.ascent()) / 2));
-            canvas.drawText(as[j1], left, yPos, paintText);
+//            int yPos = (int) ((itemHeight / 2) - ((paintText.descent() + paintText.ascent()) / 2));
+//            canvas.drawText(as[j1], left, yPos, paintText);
 
             canvas.restore();
             j1++;
         }
         // </editor-fold>
 
+
+        // Call scroll listener if item index changed
         if (loopListener != null) {
             int index = getIndexOfItem(currentScrollY);
-            if (index != NO_POSITION) {
+            if (index != NO_POSITION && index != lastScrolledIndex) {
+                lastScrolledIndex = index;
                 loopListener.onItemScrolled(getItem(index));
             }
         }
         super.onDraw(canvas);
     }
 
-    private void drawLines(Canvas canvas) {
+    private Pair<Integer, Integer> drawLines(Canvas canvas) {
         int middle = getHeight() / 2;
         int lowerY = middle - minScrollY;
         int upperY = middle + minScrollY;
 
         canvas.drawLine(0, lowerY, getWidth(), lowerY, paintDivider);
         canvas.drawLine(0, upperY, getWidth(), upperY, paintDivider);
+
+        return new Pair<>(lowerY, upperY);
+    }
+
+    private void drawText(Canvas canvas, String text, Pair<Integer, Integer> lines, int lowerY, int upperY, int left) {
+        int yPos = (int) ((itemHeight / 2) - ((paintText.descent() + paintText.ascent()) / 2));
+
+        if ((lowerY < lines.first && upperY <= lines.first) || (lowerY >= lines.second && upperY > lines.second)) {
+            // Whole item is outside of lines -> draw completely unselected
+            canvas.clipRect(0, 0, measuredWidth, itemHeight);
+            canvas.drawText(text, left, yPos, paintText);
+
+        } else if (lowerY < lines.first && upperY > lines.first) {
+            // Lower half of the item is selected
+            int lowerDeltaY = lines.first - lowerY;
+            canvas.save();
+            canvas.clipRect(0, 0, measuredWidth, lowerDeltaY);
+//            canvas.drawPaint(paintTest);
+            canvas.drawText(text, left, yPos, paintText);
+            canvas.restore();
+
+            canvas.save();
+            canvas.clipRect(0, lowerDeltaY, measuredWidth, itemHeight);
+            canvas.drawText(text, left, yPos, paintSelected);
+            canvas.restore();
+//
+        } else if (lowerY > lines.first && upperY > lines.second) {
+            // Upper half of the item is selected
+            int lowerDeltaY = lines.second - lowerY;
+            canvas.save();
+            canvas.clipRect(0, 0, measuredWidth, lowerDeltaY);
+//            canvas.drawPaint(paintTest);
+            canvas.drawText(text, left, yPos, paintSelected);
+            canvas.restore();
+
+            canvas.save();
+            canvas.clipRect(0, lowerDeltaY, measuredWidth, itemHeight);
+            canvas.drawText(text, left, yPos, paintText);
+            canvas.restore();
+
+        } else if (lowerY < lines.first && upperY > lines.second) {
+            // Item is greater than lines boundaries
+            canvas.clipRect(0, 0, measuredWidth, itemHeight);
+            canvas.drawText(text, left, yPos, paintSelected);
+
+        } else {
+            // Item is inside the lines -> draw completely selected
+            canvas.clipRect(0, 0, measuredWidth, itemHeight);
+            canvas.drawText(text, left, yPos, paintSelected);
+        }
     }
     // </editor-fold>
 
@@ -843,7 +912,17 @@ public class LoopView<T extends LoopItem> extends View {
 
         if (initializer.textSize != null) {
             this.textSize = initializer.textSize;
+        }
 
+        if (initializer.textColor != null) {
+            this.colorText = initializer.textColor;
+        }
+
+        if (initializer.selectedTextColor != null) {
+            this.colorTextSelected = initializer.selectedTextColor;
+        }
+
+        if (initializer.textSize != null || initializer.textColor != null || initializer.selectedTextColor != null) {
             initPaint(paintText, colorText);
             initPaint(paintSelected, colorTextSelected);
             initPaint(paintDivider, colorDivider);
@@ -882,6 +961,8 @@ public class LoopView<T extends LoopItem> extends View {
         @Nullable private LoopListener listener;
         @Nullable private List<T>      items;
         @Nullable private Integer      textSize;
+        @Nullable private Integer      textColor;
+        @Nullable private Integer      selectedTextColor;
         @Nullable private Integer      initPosition;
         @Nullable private Boolean      loopEnabled;
         @Nullable private Integer      mode;
@@ -898,6 +979,16 @@ public class LoopView<T extends LoopItem> extends View {
 
         public Initializer textSize(int textSize) {
             this.textSize = textSize;
+            return this;
+        }
+
+        public Initializer textColor(int textColor) {
+            this.textColor = textColor;
+            return this;
+        }
+
+        public Initializer selectedTextColor(int selectedTextColor) {
+            this.selectedTextColor = selectedTextColor;
             return this;
         }
 

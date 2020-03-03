@@ -34,9 +34,16 @@ public class DatePickerActivity extends AppCompatActivity implements DateSelectL
                             .withFields(FIELD_ALL)
                             .withLoops(NONE)
                             .withMinDateTime(new DateTime(1950, 1, 10, 12, 0))
-//                            .withMaxDateTime(new DateTime(2015, 4, 23, 12, 0))
+                            .withMaxDateTime(new DateTime())
                             .withTextSize((int) (getResources().getDisplayMetrics().density * 24))
+                            .withTitle("Test Title")
+                            .withButtonText("Bitte Auswählen")
+                            .withButtonColor(0xFFF23123)
+                            .withTextColor(0xFFD3B81F)
+                            .withSelectedTextColor(0xFF8F3A12)
+
             );
+
         });
     }
 

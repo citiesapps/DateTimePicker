@@ -1,6 +1,11 @@
-package com.appmea.datetimepicker;
+package com.appmea.datetimepicker.items;
 
-public class StringLoopItem implements LoopItem {
+import com.appmea.datetimepicker.LoopItem;
+import com.appmea.datetimepicker.Utils;
+
+import org.joda.time.LocalDate;
+
+public class MonthLoopItem implements LoopItem {
     // ====================================================================================================================================================================================
     // <editor-fold desc="Constants">
     // </editor-fold>
@@ -9,15 +14,17 @@ public class StringLoopItem implements LoopItem {
     // ====================================================================================================================================================================================
     // <editor-fold desc="Properties">
 
-    private String item;
+    private int item;
+    private String monthString;
     // </editor-fold>
 
 
     // ====================================================================================================================================================================================
     // <editor-fold desc="Constructor">
 
-    public StringLoopItem(String item) {
+    public MonthLoopItem(int item) {
         this.item = item;
+        monthString = Utils.getMonthAbbrFormatter().print(new LocalDate().withMonthOfYear(item));
     }
     // </editor-fold>
 
@@ -37,7 +44,7 @@ public class StringLoopItem implements LoopItem {
 
     @Override
     public String getText() {
-        return item;
+        return monthString;
     }
     // </editor-fold>
 
@@ -49,5 +56,9 @@ public class StringLoopItem implements LoopItem {
 
     // ====================================================================================================================================================================================
     // <editor-fold desc="Getter & Setter">
+
+    public int getItem() {
+        return item;
+    }
     // </editor-fold>
 }
