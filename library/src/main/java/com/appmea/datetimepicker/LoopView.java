@@ -33,7 +33,7 @@ public class LoopView<T extends LoopItem> extends View {
     private static final float PI        = (float) Math.PI;
     private static final float PI_DOUBLE = (float) (Math.PI * 2F);
 
-    private static final float DEFAULT_TEXT_SIZE = 40;
+    private static final float DEFAULT_TEXT_SIZE = 16;
 
     private static final int DEFAULT_COLOR_TEXT          = 0XFFAFAFAF;
     private static final int DEFAULT_COLOR_TEXT_SELECTED = 0XFF000000;

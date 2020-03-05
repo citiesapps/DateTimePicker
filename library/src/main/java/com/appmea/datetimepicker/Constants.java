@@ -1,29 +1,12 @@
 package com.appmea.datetimepicker;
 
-import android.text.format.DateFormat;
-
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-
-import java.util.Locale;
-
 public class Constants {
-
-    // Just adding a comment to check submodule working flow
-    // 2nd one
-    // 3rd one
-
-    private static final String dateTimeFormat = "MMMM dd yyyy HH:mm";
-
-    public static DateTimeFormatter getDayMonthYearTimeFormatter() {
-        return DateTimeFormat.forPattern(DateFormat.getBestDateTimePattern(Locale.getDefault(), dateTimeFormat));
-    }
-
     // ====================================================================================================================================================================================
     // <editor-fold desc="Fragment Tags">
 
     public static final String TAG_DTP_DIALOG_FRAGMENT = "dtp_dialog_frag";
     public static final String TAG_DTP_BOTTOM_SHEET    = "dtp_bottom_sheet";
+    public static final String TAG_TIME_PICKER         = "tp_dialog_frag";
     // </editor-fold>
 
     // ====================================================================================================================================================================================

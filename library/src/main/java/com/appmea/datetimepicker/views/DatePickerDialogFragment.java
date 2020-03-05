@@ -2,6 +2,7 @@ package com.appmea.datetimepicker.views;
 
 import android.app.Dialog;
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.content.res.Resources;
 import android.os.Bundle;
 import android.text.format.DateFormat;
@@ -19,7 +20,6 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentTransaction;
 
-import com.appmea.datetimepicker.Constants;
 import com.appmea.datetimepicker.DateSelectListener;
 import com.appmea.datetimepicker.LoopItem;
 import com.appmea.datetimepicker.LoopListener;
@@ -88,14 +88,14 @@ public class DatePickerDialogFragment extends DialogFragment {
     private List<MonthLoopItem>  months;
     private List<StringLoopItem> days;
 
-    private int    fields;
-    private int    loops;
-    private String title;
-    private String titleButton;
-    private int    textSizeDP;
-    private int    colorText;
-    private int    colorTextSelected;
-    private int    colorButton;
+    private int            fields;
+    private int            loops;
+    private String         title;
+    private String         titleButton;
+    private int            textSizeDP;
+    private int            colorText;
+    private int            colorTextSelected;
+    private ColorStateList colorButton;
 
     private DateTime maxDateTime;
     private DateTime minDateTime;
@@ -158,12 +158,12 @@ public class DatePickerDialogFragment extends DialogFragment {
             arguments.putString(ARGUMENT_BUTTON_TITLE, builder.buttonTextString);
         }
 
-        arguments.putInt(Constants.ARGUMENT_FIELDS, builder.fields);
+        arguments.putInt(ARGUMENT_FIELDS, builder.fields);
         arguments.putInt(ARGUMENT_LOOPS, builder.loops);
         arguments.putInt(ARGUMENT_TEXT_SIZE, builder.textSizeDP);
         arguments.putInt(ARGUMENT_COLOR_TEXT, builder.colorText);
         arguments.putInt(ARGUMENT_COLOR_TEXT_SELECTED, builder.colorSelectedText);
-        arguments.putInt(ARGUMENT_COLOR_BUTTON, builder.colorButton);
+        arguments.putParcelable(ARGUMENT_COLOR_BUTTON, builder.colorButton);
         arguments.putSerializable(ARGUMENT_MIN_DATE_TIME, builder.minDateTime);
         arguments.putSerializable(ARGUMENT_MAX_DATE_TIME, builder.maxDateTime);
         arguments.putSerializable(ARGUMENT_SELECTED_DATE_TIME, builder.selectedDateTime);
@@ -185,15 +185,15 @@ public class DatePickerDialogFragment extends DialogFragment {
         // ====================================================================================================================================================================================
         // <editor-fold desc="Properties">
 
-        int      fields            = FIELD_ALL;
-        int      loops             = NONE;
-        int      textSizeDP        = (int) (16 * Resources.getSystem().getDisplayMetrics().density);
-        int      colorText         = 0XFFAFAFAF;
-        int      colorSelectedText = 0XFF000000;
-        int      colorButton       = 0XFF000000;
-        DateTime minDateTime       = new DateTime(1900, 1, 1, 0, 0);
-        DateTime maxDateTime       = new DateTime().plusYears(100);
-        DateTime selectedDateTime  = new DateTime();
+        int            fields            = FIELD_ALL;
+        int            loops             = NONE;
+        int            textSizeDP        = (int) (16 * Resources.getSystem().getDisplayMetrics().density);
+        int            colorText         = 0XFFAFAFAF;
+        int            colorSelectedText = 0XFF000000;
+        ColorStateList colorButton       = ColorStateList.valueOf(0XFF000000);
+        DateTime       minDateTime       = new DateTime(1900, 1, 1, 0, 0);
+        DateTime       maxDateTime       = new DateTime().plusYears(100);
+        DateTime       selectedDateTime  = new DateTime();
         @StringRes
         private int    titleRes;
         private String titleString;
@@ -297,6 +297,11 @@ public class DatePickerDialogFragment extends DialogFragment {
         }
 
         public Builder withButtonColor(int colorButton) {
+            this.colorButton = ColorStateList.valueOf(colorButton);
+            return this;
+        }
+
+        public Builder withButtonColor(ColorStateList colorButton) {
             this.colorButton = colorButton;
             return this;
         }
@@ -351,7 +356,7 @@ public class DatePickerDialogFragment extends DialogFragment {
             textSizeDP = getArguments().getInt(ARGUMENT_TEXT_SIZE);
             colorText = getArguments().getInt(ARGUMENT_COLOR_TEXT);
             colorTextSelected = getArguments().getInt(ARGUMENT_COLOR_TEXT_SELECTED);
-            colorButton = getArguments().getInt(ARGUMENT_COLOR_BUTTON);
+            colorButton = getArguments().getParcelable(ARGUMENT_COLOR_BUTTON);
 
             minDateTime = (DateTime) getArguments().getSerializable(ARGUMENT_MIN_DATE_TIME);
             maxDateTime = (DateTime) getArguments().getSerializable(ARGUMENT_MAX_DATE_TIME);
@@ -754,7 +759,11 @@ public class DatePickerDialogFragment extends DialogFragment {
         return 1;
     }
 
-
+    public static int roundCurrentYearMinus(int subtract) {
+        DateTime now = new DateTime();
+        int modulo = (now.getYear() - subtract) % 10;
+        return now.getYear() - subtract - modulo;
+    }
     // </editor-fold>
 
 

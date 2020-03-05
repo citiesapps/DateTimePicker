@@ -3,6 +3,7 @@ package com.appmea.datetimepicker;
 import android.text.format.DateFormat;
 
 import org.joda.time.DateTime;
+import org.joda.time.LocalDateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
@@ -22,7 +23,7 @@ public class Utils {
      * @param date2 Second date
      * @return True if both dates are the same day; False otherwise
      */
-    public static boolean isSameDay(DateTime date1, DateTime date2) {
+    public static boolean isSameDay(LocalDateTime date1, LocalDateTime date2) {
         if (date1 == null || date2 == null) {
             return false;
         }
@@ -30,6 +31,20 @@ public class Utils {
         return date1.getDayOfYear() == date2.getDayOfYear() && date1.getYear() == date2.getYear();
     }
 
+    /**
+     * Check if 2 dates are the same day, ignoring their time
+     *
+     * @param date1 First date
+     * @param date2 Second date
+     * @return True if both dates are the same day; False otherwise
+     */
+    public static boolean isSameDay(DateTime date1, DateTime date2) {
+        if (date1 == null || date2 == null) {
+            return false;
+        }
+
+        return date1.getDayOfYear() == date2.getDayOfYear() && date1.getYear() == date2.getYear();
+    }
 
     private static final String dayOfWeekDate4 = "E MMM dd yyyy HH:mm";
 
