@@ -10,6 +10,7 @@ import java.util.Locale;
 public class Constants {
 
     // Just adding a comment to check submodule working flow
+    // 2nd one
 
     private static final String dateTimeFormat = "MMMM dd yyyy HH:mm";
 
