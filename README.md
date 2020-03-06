@@ -45,8 +45,9 @@ Finally update your YOUR_MAIN_MODULE's gradle.build file
     
     
 ### Updating submodules after changes to the submodule repo were made
-To pull the newest changes from submodules master including submodule's submodules
-**Note:** When using this method to update the submodule, the cheched-out state will be **DETACHED-HEAD**. So any local changes will be overwritten when using the command again. Make sure to check out a branch when doing changes locally.
+To pull the newest changes from submodules master including submodule's submodules   
+
+**IMPORTANT:** When using this method to update the submodule, the cheched-out state will be **DETACHED-HEAD**. So any local changes will be overwritten when using the command again. Make sure to check out a branch when doing changes locally.
 
     git submodule update --recursive --remote
 
