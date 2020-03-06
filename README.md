@@ -42,4 +42,18 @@ Finally update your YOUR_MAIN_MODULE's gradle.build file
         implementation project(path: ':datepicker:library')
         ...
     }
+    
+    
+### Updating submodules after changes to the submodule repo were made
+To pull the newest changes from submodules master including submodule's submodules
+**Note:** When using this method to update the submodule, the cheched-out state will be **DETACHED-HEAD**. So any local changes will be overwritten when using the command again. Make sure to check out a branch when doing changes locally.
 
+    git submodule update --recursive --remote
+
+### Working on submodules inside including project
+As already mentioned you can work on files of the submodule from within the project that includes the submodule. As the above method will result in a DETACHED-HEAD state you need to checkout a branch. You can do so by using AndroidStudio's built in git feature to checkout a branch. The popup will now have different repositories: 1 for your project, 1 for each submodule you imported. You can there select a branch or use the commands below to do the same
+    
+    cd your_submodules_name
+    git checkout your_branch_name
+    
+You can then work with your submodule like with any other repo, make changes, push them, ...
