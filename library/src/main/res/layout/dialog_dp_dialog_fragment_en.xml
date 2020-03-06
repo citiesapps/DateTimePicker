@@ -40,7 +40,7 @@
         tools:text="Fr., 25. März, 2020"
         />
 
-    <com.appmea.datetimepicker.LoopView
+    <com.appmea.datetimepicker.CircularListView
         android:id="@+id/lv_months"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -51,7 +51,7 @@
         tools:visibility="visible"
         />
 
-    <com.appmea.datetimepicker.LoopView
+    <com.appmea.datetimepicker.CircularListView
         android:id="@+id/lv_days"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -62,7 +62,7 @@
         tools:visibility="visible"
         />
 
-    <com.appmea.datetimepicker.LoopView
+    <com.appmea.datetimepicker.CircularListView
         android:id="@+id/lv_years"
         android:layout_width="0dp"
         android:layout_height="wrap_content"

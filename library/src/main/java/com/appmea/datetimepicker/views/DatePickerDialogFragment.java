@@ -23,7 +23,7 @@ import androidx.fragment.app.FragmentTransaction;
 import com.appmea.datetimepicker.DateSelectListener;
 import com.appmea.datetimepicker.LoopItem;
 import com.appmea.datetimepicker.LoopListener;
-import com.appmea.datetimepicker.LoopView;
+import com.appmea.datetimepicker.CircularListView;
 import com.appmea.datetimepicker.R;
 import com.appmea.datetimepicker.R2;
 import com.appmea.datetimepicker.Utils;
@@ -104,13 +104,13 @@ public class DatePickerDialogFragment extends DialogFragment {
     private View               view;
     private DateSelectListener listener;
 
-    @BindView(R2.id.tv_title)  TextView                 tvTitle;
-    @BindView(R2.id.tv_date)   TextView                 tvDate;
-    @BindView(R2.id.lv_years)  LoopView<StringLoopItem> lvYear;
-    @BindView(R2.id.lv_months) LoopView<MonthLoopItem>  lvMonth;
-    @BindView(R2.id.lv_days)   LoopView<StringLoopItem> lvDay;
-    @BindView(R2.id.tv_cancel) TextView                 tvCancel;
-    @BindView(R2.id.tv_select) TextView                 tvSelect;
+    @BindView(R2.id.tv_title)  TextView                         tvTitle;
+    @BindView(R2.id.tv_date)   TextView                         tvDate;
+    @BindView(R2.id.lv_years)  CircularListView<StringLoopItem> lvYear;
+    @BindView(R2.id.lv_months) CircularListView<MonthLoopItem>  lvMonth;
+    @BindView(R2.id.lv_days)   CircularListView<StringLoopItem> lvDay;
+    @BindView(R2.id.tv_cancel) TextView                         tvCancel;
+    @BindView(R2.id.tv_select) TextView                         tvSelect;
     // </editor-fold>
 
 

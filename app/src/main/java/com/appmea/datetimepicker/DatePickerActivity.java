@@ -32,7 +32,7 @@ public class DatePickerActivity extends AppCompatActivity implements DateSelectL
         findViewById(R.id.tv_date_picker).setOnClickListener(v -> DatePickerDialogFragment.startFragment(this,
                 new DatePickerDialogFragment.Builder()
                         .withFields(FIELD_ALL)
-                 mCallBack       .withLoops(NONE)
+                        .withLoops(NONE)
                         .withMinDateTime(new DateTime(1950, 1, 10, 12, 0))
                         .withTextSize((int) (getResources().getDisplayMetrics().density * 24))
                         .withTitle("Test Title")

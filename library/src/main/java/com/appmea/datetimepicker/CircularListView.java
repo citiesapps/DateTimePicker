@@ -25,7 +25,7 @@ import java.util.List;
 
 import timber.log.Timber;
 
-public class LoopView<T extends LoopItem> extends View {
+public class CircularListView<T extends LoopItem> extends View {
     // ====================================================================================================================================================================================
     // <editor-fold desc="Constants">
 
@@ -128,15 +128,15 @@ public class LoopView<T extends LoopItem> extends View {
     // ====================================================================================================================================================================================
     // <editor-fold desc="Constructor">
 
-    public LoopView(Context context) {
+    public CircularListView(Context context) {
         this(context, null);
     }
 
-    public LoopView(Context context, AttributeSet attributeset) {
+    public CircularListView(Context context, AttributeSet attributeset) {
         this(context, attributeset, 0);
     }
 
-    public LoopView(Context context, AttributeSet attributeset, int defStyleAttr) {
+    public CircularListView(Context context, AttributeSet attributeset, int defStyleAttr) {
         super(context, attributeset, defStyleAttr);
         if (isInEditMode()) {
             items = new ArrayList<>();
@@ -155,12 +155,12 @@ public class LoopView<T extends LoopItem> extends View {
     // <editor-fold desc="Initialisation">
 
     private void initLoopView(Context context, AttributeSet attributeset) {
-        final TypedArray array = context.obtainStyledAttributes(attributeset, R.styleable.LoopView);
+        final TypedArray array = context.obtainStyledAttributes(attributeset, R.styleable.CircularListView);
         try {
-            textSize = (int) array.getDimension(R.styleable.LoopView_textSize, array.getResources().getDisplayMetrics().density * DEFAULT_TEXT_SIZE);
-            colorText = array.getColor(R.styleable.LoopView_textColor, DEFAULT_COLOR_TEXT);
-            colorTextSelected = array.getColor(R.styleable.LoopView_selectedTextColor, DEFAULT_COLOR_TEXT_SELECTED);
-            colorDivider = array.getColor(R.styleable.LoopView_dividerColor, DEFAULT_COLOR_DIVIDER);
+            textSize = (int) array.getDimension(R.styleable.CircularListView_textSize, array.getResources().getDisplayMetrics().density * DEFAULT_TEXT_SIZE);
+            colorText = array.getColor(R.styleable.CircularListView_textColor, DEFAULT_COLOR_TEXT);
+            colorTextSelected = array.getColor(R.styleable.CircularListView_selectedTextColor, DEFAULT_COLOR_TEXT_SELECTED);
+            colorDivider = array.getColor(R.styleable.CircularListView_dividerColor, DEFAULT_COLOR_DIVIDER);
         } finally {
             array.recycle();
             if (textSize == 0) {
@@ -955,7 +955,7 @@ public class LoopView<T extends LoopItem> extends View {
 
 
     /**
-     * Initializer class to initialize the {@link LoopView} with multiple values at once, to prevent multiple calls to invalidate()/requestLayout()
+     * Initializer class to initialize the {@link CircularListView} with multiple values at once, to prevent multiple calls to invalidate()/requestLayout()
      */
     public class Initializer {
         @Nullable private LoopListener listener;
