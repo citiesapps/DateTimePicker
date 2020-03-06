@@ -24,7 +24,7 @@ import com.appmea.datetimepicker.R;
 import com.appmea.datetimepicker.DateSelectListener;
 import com.appmea.datetimepicker.LoopItem;
 import com.appmea.datetimepicker.LoopListener;
-import com.appmea.datetimepicker.LoopView;
+import com.appmea.datetimepicker.CircularListView;
 import com.appmea.datetimepicker.R2;
 import com.appmea.datetimepicker.items.StringLoopItem;
 import com.appmea.datetimepicker.Constants;
@@ -71,13 +71,13 @@ public class TimePickerDialogFragment extends DialogFragment {
 
     private View view;
 
-    @BindView(R2.id.tv_title)         TextView                 tvTitle;
-    @BindView(R2.id.lv_hours)         LoopView<StringLoopItem> lvHours;
-    @BindView(R2.id.iv_double_point1) View                     ivDoublePoint1;
-    @BindView(R2.id.iv_double_point2) View                     ivDoublePoint2;
-    @BindView(R2.id.lv_minutes)       LoopView<StringLoopItem> lvMinutes;
-    @BindView(R2.id.tv_cancel)        TextView                 tvCancel;
-    @BindView(R2.id.tv_select)        TextView                 tvSelect;
+    @BindView(R2.id.tv_title)         TextView                         tvTitle;
+    @BindView(R2.id.lv_hours)         CircularListView<StringLoopItem> lvHours;
+    @BindView(R2.id.iv_double_point1) View                             ivDoublePoint1;
+    @BindView(R2.id.iv_double_point2) View                             ivDoublePoint2;
+    @BindView(R2.id.lv_minutes)       CircularListView<StringLoopItem> lvMinutes;
+    @BindView(R2.id.tv_cancel)        TextView                         tvCancel;
+    @BindView(R2.id.tv_select)        TextView                         tvSelect;
     // </editor-fold>
 
 
