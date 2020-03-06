@@ -14,8 +14,29 @@ Inside the projects root directory modify the `gradle.settings` file
 
     include 'YOUR_MAIN_MODULE', ':datepicker:library'
     
-Finally include the submodule to the projects gradle dependency tree inside your YOUR_MAIN_MODULE's gradle.build file
+Finally update your YOUR_MAIN_MODULE's gradle.build file
 
+    android {
+        ...
+    
+        compileOptions {
+            ...
+            targetCompatibility = 1.8
+            sourceCompatibility = 1.8
+            ...
+        }
+        
+        ...
+        
+        defaultConfig {
+            ...
+            minSdkVersion 21
+            ...
+        }
+    }
+    
+    ... 
+    
     dependencies {
         ...
         implementation project(path: ':datepicker:library')
