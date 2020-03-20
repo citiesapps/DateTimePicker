@@ -1,5 +1,3 @@
 <resources>
     <string name="app_name">DateTimePicker</string>
-    <string name="button_text">Choose date</string>
-    <string name="text_confirm">Confirm</string>
 </resources>

@@ -5,6 +5,10 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.content.res.Resources;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.ShapeDrawable;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,15 +24,15 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentTransaction;
 
-import com.appmea.datetimepicker.R;
+import com.appmea.datetimepicker.CircularListView;
+import com.appmea.datetimepicker.Constants;
 import com.appmea.datetimepicker.DateSelectListener;
 import com.appmea.datetimepicker.LoopItem;
 import com.appmea.datetimepicker.LoopListener;
-import com.appmea.datetimepicker.CircularListView;
+import com.appmea.datetimepicker.R;
 import com.appmea.datetimepicker.R2;
-import com.appmea.datetimepicker.items.StringLoopItem;
-import com.appmea.datetimepicker.Constants;
 import com.appmea.datetimepicker.Utils;
+import com.appmea.datetimepicker.items.StringLoopItem;
 
 import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
@@ -39,11 +43,13 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import timber.log.Timber;
 
 import static com.appmea.datetimepicker.Constants.ARGUMENT_BUTTON_TITLE;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_COLOR_BUTTON;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_COLOR_TEXT;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_COLOR_TEXT_SELECTED;
+import static com.appmea.datetimepicker.Constants.ARGUMENT_LISTENER_ID;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_SELECTED_DATE_TIME;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_TEXT_SIZE;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_TITLE;
@@ -59,9 +65,11 @@ public class TimePickerDialogFragment extends DialogFragment {
     // ====================================================================================================================================================================================
     // <editor-fold desc="Properties">
 
+    @Nullable
     private DateSelectListener listener;
     private DateTime           selectedTime = new DateTime();
 
+    private int            listenerId;
     private String         title;
     private String         titleButton;
     private int            textSizeDP;
@@ -73,8 +81,8 @@ public class TimePickerDialogFragment extends DialogFragment {
 
     @BindView(R2.id.tv_title)         TextView                         tvTitle;
     @BindView(R2.id.lv_hours)         CircularListView<StringLoopItem> lvHours;
-    @BindView(R2.id.iv_double_point1) View                             ivDoublePoint1;
-    @BindView(R2.id.iv_double_point2) View                             ivDoublePoint2;
+    @BindView(R2.id.iv_double_point1) View                             vDoublePoint1;
+    @BindView(R2.id.iv_double_point2) View                             vDoublePoint2;
     @BindView(R2.id.lv_minutes)       CircularListView<StringLoopItem> lvMinutes;
     @BindView(R2.id.tv_cancel)        TextView                         tvCancel;
     @BindView(R2.id.tv_select)        TextView                         tvSelect;
@@ -112,6 +120,7 @@ public class TimePickerDialogFragment extends DialogFragment {
         TimePickerDialogFragment fragment = new TimePickerDialogFragment();
 
         Bundle arguments = new Bundle();
+        arguments.putInt(ARGUMENT_LISTENER_ID, builder.listenerId);
         if (builder.titleRes != 0) {
             arguments.putInt(ARGUMENT_TITLE, builder.titleRes);
         } else if (builder.titleString != null) {
@@ -146,6 +155,7 @@ public class TimePickerDialogFragment extends DialogFragment {
         // ====================================================================================================================================================================================
         // <editor-fold desc="Properties">
 
+        int            listenerId;
         int            textSizeDP        = (int) (16 * Resources.getSystem().getDisplayMetrics().density);
         int            colorText         = 0XFFAFAFAF;
         int            colorSelectedText = 0XFF000000;
@@ -162,6 +172,10 @@ public class TimePickerDialogFragment extends DialogFragment {
 
         // ====================================================================================================================================================================================
         // <editor-fold desc="Constructor">
+
+        public Builder(int listenerId) {
+            this.listenerId = listenerId;
+        }
 
         public Builder withTitle(@StringRes int titleRes) {
             this.titleRes = titleRes;
@@ -230,7 +244,7 @@ public class TimePickerDialogFragment extends DialogFragment {
         } else if (context instanceof DateSelectListener) {
             listener = (DateSelectListener) context;
         } else {
-            throw new IllegalArgumentException("Parent of " + DatePickerDialogFragment.class.getName() + " must implement " + DateSelectListener.class.getName());
+            Timber.e("Parent of " + TimePickerDialogFragment.class.getName() + " must implement " + DateSelectListener.class.getName());
         }
     }
 
@@ -244,6 +258,7 @@ public class TimePickerDialogFragment extends DialogFragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
+            listenerId = getArguments().getInt(ARGUMENT_LISTENER_ID);
             Object o = getArguments().get(ARGUMENT_TITLE);
             if (o instanceof String) {
                 title = (String) o;
@@ -318,8 +333,9 @@ public class TimePickerDialogFragment extends DialogFragment {
         tvSelect.setTextColor(colorButton);
         tvCancel.setTextColor(colorButton);
 
-        ivDoublePoint1.setBackgroundTintList(ColorStateList.valueOf(colorTextSelected));
-        ivDoublePoint2.setBackgroundTintList(ColorStateList.valueOf(colorTextSelected));
+
+        colorBackground(vDoublePoint1.getBackground(), colorTextSelected);
+        colorBackground(vDoublePoint2.getBackground(), colorTextSelected);
     }
 
     private void initLoopViews() {
@@ -366,7 +382,10 @@ public class TimePickerDialogFragment extends DialogFragment {
 
     @OnClick(R2.id.tv_select)
     void onSelectClicked() {
-        listener.onDateSelected(selectedTime);
+        if (listener != null) {
+            listener.onDateSelected(listenerId, selectedTime);
+            listener.onTimeSelected(listenerId, selectedTime.getHourOfDay(), selectedTime.getMinuteOfHour());
+        }
         dismiss();
     }
 
@@ -383,6 +402,16 @@ public class TimePickerDialogFragment extends DialogFragment {
         }
 
         return years;
+    }
+
+    private void colorBackground(Drawable background, int color) {
+        if (background instanceof ShapeDrawable) {
+            ((ShapeDrawable) background).getPaint().setColor(color);
+        } else if (background instanceof GradientDrawable) {
+            ((GradientDrawable) background).setColor(color);
+        } else if (background instanceof ColorDrawable) {
+            ((ColorDrawable) background).setColor(color);
+        }
     }
     // </editor-fold>
 

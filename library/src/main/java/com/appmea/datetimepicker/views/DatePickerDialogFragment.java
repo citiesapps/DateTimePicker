@@ -20,10 +20,10 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.appmea.datetimepicker.CircularListView;
 import com.appmea.datetimepicker.DateSelectListener;
 import com.appmea.datetimepicker.LoopItem;
 import com.appmea.datetimepicker.LoopListener;
-import com.appmea.datetimepicker.CircularListView;
 import com.appmea.datetimepicker.R;
 import com.appmea.datetimepicker.R2;
 import com.appmea.datetimepicker.Utils;
@@ -40,12 +40,14 @@ import java.util.Locale;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import timber.log.Timber;
 
 import static com.appmea.datetimepicker.Constants.ARGUMENT_BUTTON_TITLE;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_COLOR_BUTTON;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_COLOR_TEXT;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_COLOR_TEXT_SELECTED;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_FIELDS;
+import static com.appmea.datetimepicker.Constants.ARGUMENT_LISTENER_ID;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_LOOPS;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_MAX_DATE_TIME;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_MIN_DATE_TIME;
@@ -88,6 +90,7 @@ public class DatePickerDialogFragment extends DialogFragment {
     private List<MonthLoopItem>  months;
     private List<StringLoopItem> days;
 
+    private int            listenerId;
     private int            fields;
     private int            loops;
     private String         title;
@@ -101,8 +104,9 @@ public class DatePickerDialogFragment extends DialogFragment {
     private DateTime minDateTime;
     private DateTime selectedDateTime;
 
-    private View               view;
-    private DateSelectListener listener;
+    private View view;
+
+    @Nullable private DateSelectListener listener;
 
     @BindView(R2.id.tv_title)  TextView                         tvTitle;
     @BindView(R2.id.tv_date)   TextView                         tvDate;
@@ -145,6 +149,7 @@ public class DatePickerDialogFragment extends DialogFragment {
         DatePickerDialogFragment fragment = new DatePickerDialogFragment();
 
         Bundle arguments = new Bundle();
+        arguments.putInt(ARGUMENT_LISTENER_ID, builder.listenerId);
 
         if (builder.titleRes != 0) {
             arguments.putInt(ARGUMENT_TITLE, builder.titleRes);
@@ -185,6 +190,7 @@ public class DatePickerDialogFragment extends DialogFragment {
         // ====================================================================================================================================================================================
         // <editor-fold desc="Properties">
 
+        int            listenerId;
         int            fields            = FIELD_ALL;
         int            loops             = NONE;
         int            textSizeDP        = (int) (16 * Resources.getSystem().getDisplayMetrics().density);
@@ -205,6 +211,11 @@ public class DatePickerDialogFragment extends DialogFragment {
 
         // ====================================================================================================================================================================================
         // <editor-fold desc="Constructor">
+
+
+        public Builder(int listenerId) {
+            this.listenerId = listenerId;
+        }
 
         /**
          * Set field flag. <br>
@@ -323,7 +334,7 @@ public class DatePickerDialogFragment extends DialogFragment {
         } else if (context instanceof DateSelectListener) {
             listener = (DateSelectListener) context;
         } else {
-            throw new IllegalArgumentException("Parent of " + DatePickerDialogFragment.class.getName() + " must implement " + DateSelectListener.class.getName());
+            Timber.e("Parent of " + DatePickerDialogFragment.class.getName() + " must implement " + DateSelectListener.class.getName());
         }
     }
 
@@ -337,6 +348,8 @@ public class DatePickerDialogFragment extends DialogFragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
+            listenerId = getArguments().getInt(ARGUMENT_LISTENER_ID);
+
             Object o = getArguments().get(ARGUMENT_TITLE);
             if (o instanceof String) {
                 title = (String) o;
@@ -593,7 +606,10 @@ public class DatePickerDialogFragment extends DialogFragment {
 
     @OnClick(R2.id.tv_select)
     void onSelectClicked() {
-        listener.onDateSelected(selectedDateTime);
+        if (listener != null) {
+            listener.onDateSelected(listenerId, selectedDateTime);
+            listener.onDateSelected(listenerId, selectedDateTime.getYear(), selectedDateTime.getMonthOfYear(), selectedDateTime.getDayOfMonth());
+        }
         dismiss();
     }
 
