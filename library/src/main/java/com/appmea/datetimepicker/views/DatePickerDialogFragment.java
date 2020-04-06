@@ -628,8 +628,8 @@ public class DatePickerDialogFragment extends DialogFragment {
 
         if (currentYear != newYear) {
             DateTime newDateTime = selectedDateTime.year().setCopy(newYear);
-            updateMonths(newDateTime);
-            updateDays(newDateTime);
+            newDateTime = updateMonths(newDateTime);
+            newDateTime = updateDays(newDateTime);
 
             selectedDateTime = newDateTime;
         }
@@ -649,7 +649,7 @@ public class DatePickerDialogFragment extends DialogFragment {
 
         if (currentMonth != newMonth) {
             DateTime newDateTime = selectedDateTime.monthOfYear().setCopy(newMonth);
-            updateDays(newDateTime);
+            newDateTime = updateDays(newDateTime);
 
             selectedDateTime = newDateTime;
         }
@@ -662,9 +662,9 @@ public class DatePickerDialogFragment extends DialogFragment {
     }
 
 
-    private void updateMonths(DateTime newDateTime) {
+    private DateTime updateMonths(DateTime newDateTime) {
         if (!monthsEnabled()) {
-            return;
+            return newDateTime;
         }
 
         int currentLowerLimit = months.get(0).getItem();
@@ -673,17 +673,33 @@ public class DatePickerDialogFragment extends DialogFragment {
         int newLowerLimit = calcLowerBoundMonths(currentLowerLimit, newDateTime);
         int newUpperLimit = calcUpperBoundMonths(currentUpperLimit, newDateTime);
 
-        if (currentLowerLimit != newLowerLimit || currentUpperLimit != newUpperLimit) {
-            // .subList 1st argument is inclusive, 2nd argument is exclusive
-            // As calc...() return the bounds on base 1 basis we have to subtract 1
-            months = finalMonths.subList(newLowerLimit - 1, newUpperLimit);
+        if (currentLowerLimit == newLowerLimit && currentUpperLimit == newUpperLimit) {
+            return newDateTime;
+        }
+
+        // .subList 1st argument is inclusive, 2nd argument is exclusive
+        // As calc...() return the bounds on base 1 basis we have to subtract 1
+        months = finalMonths.subList(newLowerLimit - 1, newUpperLimit);
+
+        int currentMonthOfYear = newDateTime.getMonthOfYear();
+        if (newLowerLimit > currentMonthOfYear) {
+            lvMonth.updateItemsAndScrollTop(months);
+            newDateTime = newDateTime.monthOfYear().setCopy(months.get(0).getItem());
+
+        } else if (newUpperLimit < currentMonthOfYear) {
+            lvMonth.updateItemsAndScrollBottom(months);
+            newDateTime = newDateTime.monthOfYear().setCopy(months.get(months.size() - 1).getItem());
+
+        } else {
             lvMonth.updateItems(months);
         }
+
+        return newDateTime;
     }
 
-    private void updateDays(DateTime newDateTime) {
+    private DateTime updateDays(DateTime newDateTime) {
         if (!daysEnabled()) {
-            return;
+            return newDateTime;
         }
 
         int currentLowerLimit = Integer.parseInt(days.get(0).getText());
@@ -692,12 +708,28 @@ public class DatePickerDialogFragment extends DialogFragment {
         int newLowerLimit = calcLowerBoundDays(currentLowerLimit, newDateTime);
         int newUpperLimit = calcUpperBoundDays(currentUpperLimit, newDateTime);
 
-        if (currentLowerLimit != newLowerLimit || currentUpperLimit != newUpperLimit) {
-            // .subList 1st argument is inclusive, 2nd argument is exclusive
-            // As calc...() return the bounds on base 1 basis we have to subtract 1
-            days = finalDays.subList(newLowerLimit - 1, newUpperLimit);
+        if (currentLowerLimit == newLowerLimit && currentUpperLimit == newUpperLimit) {
+            return newDateTime;
+        }
+
+        // .subList 1st argument is inclusive, 2nd argument is exclusive
+        // As calc...() return the bounds on base 1 basis we have to subtract 1
+        days = finalDays.subList(newLowerLimit - 1, newUpperLimit);
+
+        int currentDayOfMonth = newDateTime.getDayOfMonth();
+        if (newLowerLimit > currentDayOfMonth) {
+            lvDay.updateItemsAndScrollTop(days);
+            newDateTime = newDateTime.dayOfMonth().setCopy(Integer.parseInt(days.get(0).getText()));
+
+        } else if (newUpperLimit < currentDayOfMonth) {
+            lvDay.updateItemsAndScrollBottom(days);
+            newDateTime = newDateTime.dayOfMonth().setCopy(Integer.parseInt(days.get(days.size() - 1).getText()));
+
+        } else {
             lvDay.updateItems(days);
         }
+
+        return newDateTime;
     }
 
     /**
@@ -779,6 +811,17 @@ public class DatePickerDialogFragment extends DialogFragment {
         DateTime now = new DateTime();
         int modulo = (now.getYear() - subtract) % 10;
         return now.getYear() - subtract - modulo;
+    }
+
+    private int indexOfItem(List<? extends LoopItem> list, String text) {
+        for (int i = 0; i < list.size(); i++) {
+            LoopItem item = list.get(i);
+            if (item.getText().equals(text)) {
+                return i;
+            }
+        }
+
+        return -1;
     }
     // </editor-fold>
 

@@ -1012,19 +1012,72 @@ public class CircularListView<T extends LoopItem> extends View {
     // ====================================================================================================================================================================================
     // <editor-fold desc="Updates">
 
+    /**
+     * Updates the current items.
+     * <ol>
+     *     <li>If the new list contains the current selected item it will set its new selected position, to the same item </li>
+     *     <li>It the previous/current selected item position == 0, it will set the new position to 0 </li>
+     *     <li>It the previous/current selected item position == last position, it will set the new position to the last position</li>
+     * </ol>
+     *
+     * @param items New items
+     */
     public void updateItems(List<T> items) {
         int countBeforeUpdate = getChildCount();
         int indexBeforeUpdate = getIndexOfItem(currentScrollY);
-        Timber.e("updateItems: %d", indexBeforeUpdate);
-        this.items = items;
-        updateScrollRange();
-        updateCurrentScrollY(indexBeforeUpdate, countBeforeUpdate);
+
+        int itemPosition = -1;
+        T currentItem = getItem(indexBeforeUpdate);
+        if (currentItem != null) {
+            for (int i = 0; i < items.size(); ++i) {
+                T item = items.get(i);
+                if (currentItem.equals(item)) {
+                    itemPosition = i;
+                    break;
+                }
+            }
+        }
+
+        updateItemsInternal(items);
+        updateCurrentScrollY(indexBeforeUpdate, countBeforeUpdate, itemPosition);
 
         invalidate();
     }
 
-    private void updateCurrentScrollY(int indexBeforeUpdate, int countBeforeUpdate) {
-        if (indexBeforeUpdate == 0) {
+    /**
+     * Updates the current items and sets the selected item to the first one
+     *
+     * @param items New items
+     */
+    public void updateItemsAndScrollTop(List<T> items) {
+        updateItemsInternal(items);
+        initPosition = 0;
+        initScrollAndIndex();
+        invalidate();
+    }
+
+    /**
+     * Updates the current items and sets the selected item to the last one
+     *
+     * @param items New items
+     */
+    public void updateItemsAndScrollBottom(List<T> items) {
+        updateItemsInternal(items);
+        initPosition = items.size() - 1;
+        initScrollAndIndex();
+        invalidate();
+    }
+
+    private void updateItemsInternal(List<T> items) {
+        this.items = items;
+        updateScrollRange();
+    }
+
+    private void updateCurrentScrollY(int indexBeforeUpdate, int countBeforeUpdate, int itemPosition) {
+        if (itemPosition != -1) {
+            initPosition = itemPosition;
+            initScrollAndIndex();
+        } else if (indexBeforeUpdate == 0) {
             currentScrollY = minScrollY;
         } else if (indexBeforeUpdate == countBeforeUpdate - 1) {
             currentScrollY = maxScrollY;

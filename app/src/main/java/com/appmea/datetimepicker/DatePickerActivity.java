@@ -19,9 +19,9 @@ import static com.appmea.datetimepicker.views.DatePickerDialogFragment.NONE;
 
 public class DatePickerActivity extends AppCompatActivity implements DateSelectListener {
 
-    private Toast toast;
-    private static final int LISTENER_TIME = 0;
-    private static final int LISTENER_DATE = 1;
+    private              Toast toast;
+    private static final int   LISTENER_TIME = 0;
+    private static final int   LISTENER_DATE = 1;
 
 
     @Override
@@ -44,7 +44,8 @@ public class DatePickerActivity extends AppCompatActivity implements DateSelectL
                 new DatePickerDialogFragment.Builder(LISTENER_DATE)
                         .withFields(FIELD_ALL)
                         .withLoops(NONE)
-                        .withMinDateTime(new DateTime(1950, 1, 10, 12, 0))
+                        .withMinDateTime(new DateTime(2000, 4, 10, 12, 0))
+                        .withMaxDateTime(new DateTime(2021, 8, 5, 12, 0))
                         .withTextSize((int) (getResources().getDisplayMetrics().density * 24))
                         .withTitle("Test Title")
                         .withButtonText("Bitte Auswählen")
