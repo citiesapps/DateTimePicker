@@ -106,7 +106,7 @@
         android:layout_height="wrap_content"
         android:background="@color/white"
         android:gravity="center"
-        android:text="@string/button_text"
+        android:text="@android:string/ok"
         android:padding="@dimen/padding_normal"
         app:layout_constrainedWidth="true"
         app:layout_constraintBottom_toBottomOf="parent"

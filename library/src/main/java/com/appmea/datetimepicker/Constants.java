@@ -16,6 +16,7 @@ public class Constants {
     public static final String ARGUMENT_COLOR_TEXT          = "color_text";
     public static final String ARGUMENT_COLOR_TEXT_SELECTED = "color_text_selected";
     public static final String ARGUMENT_FIELDS              = "fields";
+    public static final String ARGUMENT_LISTENER_ID         = "listener_id";
     public static final String ARGUMENT_LOOPS               = "loops";
     public static final String ARGUMENT_MAX_DATE_TIME       = "max_date_time";
     public static final String ARGUMENT_MIN_DATE_TIME       = "min_date_time";

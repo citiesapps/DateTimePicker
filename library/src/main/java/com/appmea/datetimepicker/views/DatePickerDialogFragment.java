@@ -20,10 +20,10 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.appmea.datetimepicker.CircularListView;
 import com.appmea.datetimepicker.DateSelectListener;
 import com.appmea.datetimepicker.LoopItem;
 import com.appmea.datetimepicker.LoopListener;
-import com.appmea.datetimepicker.CircularListView;
 import com.appmea.datetimepicker.R;
 import com.appmea.datetimepicker.R2;
 import com.appmea.datetimepicker.Utils;
@@ -40,12 +40,14 @@ import java.util.Locale;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import timber.log.Timber;
 
 import static com.appmea.datetimepicker.Constants.ARGUMENT_BUTTON_TITLE;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_COLOR_BUTTON;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_COLOR_TEXT;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_COLOR_TEXT_SELECTED;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_FIELDS;
+import static com.appmea.datetimepicker.Constants.ARGUMENT_LISTENER_ID;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_LOOPS;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_MAX_DATE_TIME;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_MIN_DATE_TIME;
@@ -88,6 +90,7 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
     private List<MonthLoopItem>  months;
     private List<StringLoopItem> days;
 
+    private int            listenerId;
     private int            fields;
     private int            loops;
     private String         title;
@@ -101,8 +104,9 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
     private DateTime minDateTime;
     private DateTime selectedDateTime;
 
-    private View               view;
-    private DateSelectListener listener;
+    private View view;
+
+    @Nullable private DateSelectListener listener;
 
     @BindView(R2.id.tv_title)  TextView                         tvTitle;
     @BindView(R2.id.tv_date)   TextView                         tvDate;
@@ -145,6 +149,7 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
         DatePickerDialogFragment fragment = new DatePickerDialogFragment();
 
         Bundle arguments = new Bundle();
+        arguments.putInt(ARGUMENT_LISTENER_ID, builder.listenerId);
 
         if (builder.titleRes != 0) {
             arguments.putInt(ARGUMENT_TITLE, builder.titleRes);
@@ -185,6 +190,7 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
         // ====================================================================================================================================================================================
         // <editor-fold desc="Properties">
 
+        int            listenerId;
         int            fields            = FIELD_ALL;
         int            loops             = NONE;
         int            textSizeDP        = (int) (16 * Resources.getSystem().getDisplayMetrics().density);
@@ -205,6 +211,11 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
 
         // ====================================================================================================================================================================================
         // <editor-fold desc="Constructor">
+
+
+        public Builder(int listenerId) {
+            this.listenerId = listenerId;
+        }
 
         /**
          * Set field flag. <br>
@@ -323,7 +334,7 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
         } else if (context instanceof DateSelectListener) {
             listener = (DateSelectListener) context;
         } else {
-            throw new IllegalArgumentException("Parent of " + DatePickerDialogFragment.class.getName() + " must implement " + DateSelectListener.class.getName());
+            Timber.e("Parent of " + DatePickerDialogFragment.class.getName() + " must implement " + DateSelectListener.class.getName());
         }
     }
 
@@ -337,6 +348,8 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
+            listenerId = getArguments().getInt(ARGUMENT_LISTENER_ID);
+
             Object o = getArguments().get(ARGUMENT_TITLE);
             if (o instanceof String) {
                 title = (String) o;
@@ -593,7 +606,10 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
 
     @OnClick(R2.id.tv_select)
     void onSelectClicked() {
-        listener.onDateSelected(selectedDateTime);
+        if (listener != null) {
+            listener.onDateSelected(listenerId, selectedDateTime);
+            listener.onDateSelected(listenerId, selectedDateTime.getYear(), selectedDateTime.getMonthOfYear(), selectedDateTime.getDayOfMonth());
+        }
         dismiss();
     }
 
@@ -612,8 +628,8 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
 
         if (currentYear != newYear) {
             DateTime newDateTime = selectedDateTime.year().setCopy(newYear);
-            updateMonths(newDateTime);
-            updateDays(newDateTime);
+            newDateTime = updateMonths(newDateTime);
+            newDateTime = updateDays(newDateTime);
 
             selectedDateTime = newDateTime;
         }
@@ -633,7 +649,7 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
 
         if (currentMonth != newMonth) {
             DateTime newDateTime = selectedDateTime.monthOfYear().setCopy(newMonth);
-            updateDays(newDateTime);
+            newDateTime = updateDays(newDateTime);
 
             selectedDateTime = newDateTime;
         }
@@ -646,9 +662,9 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
     }
 
 
-    private void updateMonths(DateTime newDateTime) {
+    private DateTime updateMonths(DateTime newDateTime) {
         if (!monthsEnabled()) {
-            return;
+            return newDateTime;
         }
 
         int currentLowerLimit = months.get(0).getItem();
@@ -657,17 +673,33 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
         int newLowerLimit = calcLowerBoundMonths(currentLowerLimit, newDateTime);
         int newUpperLimit = calcUpperBoundMonths(currentUpperLimit, newDateTime);
 
-        if (currentLowerLimit != newLowerLimit || currentUpperLimit != newUpperLimit) {
-            // .subList 1st argument is inclusive, 2nd argument is exclusive
-            // As calc...() return the bounds on base 1 basis we have to subtract 1
-            months = finalMonths.subList(newLowerLimit - 1, newUpperLimit);
+        if (currentLowerLimit == newLowerLimit && currentUpperLimit == newUpperLimit) {
+            return newDateTime;
+        }
+
+        // .subList 1st argument is inclusive, 2nd argument is exclusive
+        // As calc...() return the bounds on base 1 basis we have to subtract 1
+        months = finalMonths.subList(newLowerLimit - 1, newUpperLimit);
+
+        int currentMonthOfYear = newDateTime.getMonthOfYear();
+        if (newLowerLimit > currentMonthOfYear) {
+            lvMonth.updateItemsAndScrollTop(months);
+            newDateTime = newDateTime.monthOfYear().setCopy(months.get(0).getItem());
+
+        } else if (newUpperLimit < currentMonthOfYear) {
+            lvMonth.updateItemsAndScrollBottom(months);
+            newDateTime = newDateTime.monthOfYear().setCopy(months.get(months.size() - 1).getItem());
+
+        } else {
             lvMonth.updateItems(months);
         }
+
+        return newDateTime;
     }
 
-    private void updateDays(DateTime newDateTime) {
+    private DateTime updateDays(DateTime newDateTime) {
         if (!daysEnabled()) {
-            return;
+            return newDateTime;
         }
 
         int currentLowerLimit = Integer.parseInt(days.get(0).getText());
@@ -676,12 +708,28 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
         int newLowerLimit = calcLowerBoundDays(currentLowerLimit, newDateTime);
         int newUpperLimit = calcUpperBoundDays(currentUpperLimit, newDateTime);
 
-        if (currentLowerLimit != newLowerLimit || currentUpperLimit != newUpperLimit) {
-            // .subList 1st argument is inclusive, 2nd argument is exclusive
-            // As calc...() return the bounds on base 1 basis we have to subtract 1
-            days = finalDays.subList(newLowerLimit - 1, newUpperLimit);
+        if (currentLowerLimit == newLowerLimit && currentUpperLimit == newUpperLimit) {
+            return newDateTime;
+        }
+
+        // .subList 1st argument is inclusive, 2nd argument is exclusive
+        // As calc...() return the bounds on base 1 basis we have to subtract 1
+        days = finalDays.subList(newLowerLimit - 1, newUpperLimit);
+
+        int currentDayOfMonth = newDateTime.getDayOfMonth();
+        if (newLowerLimit > currentDayOfMonth) {
+            lvDay.updateItemsAndScrollTop(days);
+            newDateTime = newDateTime.dayOfMonth().setCopy(Integer.parseInt(days.get(0).getText()));
+
+        } else if (newUpperLimit < currentDayOfMonth) {
+            lvDay.updateItemsAndScrollBottom(days);
+            newDateTime = newDateTime.dayOfMonth().setCopy(Integer.parseInt(days.get(days.size() - 1).getText()));
+
+        } else {
             lvDay.updateItems(days);
         }
+
+        return newDateTime;
     }
 
     /**
@@ -763,6 +811,17 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
         DateTime now = new DateTime();
         int modulo = (now.getYear() - subtract) % 10;
         return now.getYear() - subtract - modulo;
+    }
+
+    private int indexOfItem(List<? extends LoopItem> list, String text) {
+        for (int i = 0; i < list.size(); i++) {
+            LoopItem item = list.get(i);
+            if (item.getText().equals(text)) {
+                return i;
+            }
+        }
+
+        return -1;
     }
     // </editor-fold>
 
