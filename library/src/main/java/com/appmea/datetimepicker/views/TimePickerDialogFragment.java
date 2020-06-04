@@ -15,7 +15,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
-import androidx.fragment.app.DialogFragment;
+import androidx.appcompat.app.AppCompatDialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentTransaction;
@@ -48,7 +48,7 @@ import static com.appmea.datetimepicker.Constants.ARGUMENT_SELECTED_DATE_TIME;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_TEXT_SIZE;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_TITLE;
 
-public class TimePickerDialogFragment extends DialogFragment {
+public class TimePickerDialogFragment extends AppCompatDialogFragment {
     // ====================================================================================================================================================================================
     // <editor-fold desc="Constants">
     //
