@@ -1,11 +1,15 @@
 <resources>
 
     <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.MaterialComponents.Light.DarkActionBar">
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
         <!-- Customize your theme here. -->
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>
+        <item name="colorAccent">#abc</item>
+        <item name="colorOnPrimary">#beef</item>
+        <item name="colorSurface">#59B221</item>
+        <item name="colorBackgroundFloating">?colorSurface</item>
+        <item name="colorRippleSurface" >#1F000000</item>
     </style>
 
 </resources>

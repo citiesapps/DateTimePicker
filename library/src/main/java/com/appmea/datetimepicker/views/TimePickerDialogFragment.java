@@ -5,10 +5,14 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.content.res.Resources;
+import android.graphics.BlendModeColorFilter;
+import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.ShapeDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,11 +24,14 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.appcompat.app.AppCompatDialogFragment;
+import androidx.core.graphics.BlendModeColorFilterCompat;
+import androidx.core.graphics.BlendModeCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.appmea.datetimepicker.CircularListView;
+import com.appmea.datetimepicker.ColorUtils;
 import com.appmea.datetimepicker.Constants;
 import com.appmea.datetimepicker.DateSelectListener;
 import com.appmea.datetimepicker.LoopItem;
@@ -77,7 +84,8 @@ public class TimePickerDialogFragment extends AppCompatDialogFragment {
     private int            colorTextSelected;
     private ColorStateList colorButton;
 
-    private View view;
+    private ColorUtils colorUtils;
+    private View       view;
 
     @BindView(R2.id.tv_title)         TextView                         tvTitle;
     @BindView(R2.id.lv_hours)         CircularListView<StringLoopItem> lvHours;
@@ -237,6 +245,7 @@ public class TimePickerDialogFragment extends AppCompatDialogFragment {
     @Override
     public void onAttach(@NotNull Context context) {
         super.onAttach(context);
+        colorUtils = new ColorUtils(context);
 
         // Parent is a fragment (getParentFragment() returns null, if no parent fragment exists and is directly attached to an activity
         if (getParentFragment() instanceof DateSelectListener) {
@@ -303,6 +312,9 @@ public class TimePickerDialogFragment extends AppCompatDialogFragment {
         Dialog dialog = super.onCreateDialog(savedInstanceState);
         if (dialog.getWindow() != null) {
             dialog.getWindow().requestFeature(Window.FEATURE_NO_TITLE);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                dialog.getWindow().getDecorView().getBackground().setColorFilter(BlendModeColorFilterCompat.createBlendModeColorFilterCompat(Color.TRANSPARENT, BlendModeCompat.SRC_IN));
+            }
         }
         return dialog;
     }
@@ -328,6 +340,14 @@ public class TimePickerDialogFragment extends AppCompatDialogFragment {
 
         if (titleButton != null) {
             tvSelect.setText(titleButton);
+        }
+
+        tvSelect.setTextColor(colorButton);
+        tvCancel.setTextColor(colorButton);
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            tvCancel.setBackground(colorUtils.createRipple());
+            tvSelect.setBackground(colorUtils.createRipple());
         }
 
         tvSelect.setTextColor(colorButton);

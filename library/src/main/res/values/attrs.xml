@@ -1,9 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <attr name="colorRippleSurface" format="color|reference" />
+
     <declare-styleable name="CircularListView">
         <attr name="textSize" format="dimension" />
         <attr name="selectedTextColor" format="color" />
         <attr name="textColor" format="color" />
         <attr name="dividerColor" format="color" />
+    </declare-styleable>
+
+    <declare-styleable name="RoundedConstraintLayout">
+        <attr name="rcl_radius" format="dimension" />
+        <attr name="rcl_stroke_width" format="dimension" />
+        <attr name="rcl_stroke_color" format="color|reference" />
+        <attr name="rcl_background_color" format="color|reference" />
     </declare-styleable>
 </resources>

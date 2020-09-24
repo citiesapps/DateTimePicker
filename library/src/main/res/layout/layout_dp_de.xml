@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    tools:parentTag="androidx.constraintlayout.widget.ConstraintLayout"
+    >
+
+    <TextView
+        android:id="@+id/tv_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-medium"
+        android:gravity="center"
+        android:paddingStart="16dp"
+        android:paddingTop="16dp"
+        android:paddingEnd="16dp"
+        android:textColor="#CB000000"
+        android:textSize="18sp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="Choose something"
+        tools:visibility="visible"
+        />
+
+
+    <TextView
+        android:id="@+id/tv_date"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:paddingStart="16dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="16dp"
+        android:textSize="14sp"
+        app:layout_constraintTop_toBottomOf="@id/tv_title"
+        app:layout_goneMarginTop="8dp"
+        tools:text="Fr., 25. März, 2020"
+        />
+
+    <com.appmea.datetimepicker.CircularListView
+        android:id="@+id/lv_days"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintEnd_toStartOf="@id/lv_months"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_date"
+        tools:visibility="visible"
+        />
+
+    <com.appmea.datetimepicker.CircularListView
+        android:id="@+id/lv_months"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintEnd_toStartOf="@id/lv_years"
+        app:layout_constraintStart_toEndOf="@id/lv_days"
+        app:layout_constraintTop_toBottomOf="@id/tv_date"
+        tools:visibility="visible"
+        />
+
+    <com.appmea.datetimepicker.CircularListView
+        android:id="@+id/lv_years"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/lv_months"
+        app:layout_constraintTop_toBottomOf="@id/tv_date"
+        tools:visibility="visible"
+        />
+
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/barr"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:barrierDirection="bottom"
+        app:constraint_referenced_ids="lv_days,lv_months,lv_years"
+        />
+
+    <TextView
+        android:id="@+id/tv_cancel"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@drawable/ripple_surface"
+        android:gravity="center"
+        android:padding="@dimen/padding_normal"
+        android:text="@android:string/cancel"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/tv_select"
+        app:layout_constraintHorizontal_bias="1"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/barr"
+        app:layout_constraintWidth_max="wrap"
+        app:layout_constraintWidth_percent="0.5"
+        />
+
+    <TextView
+        android:id="@+id/tv_select"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@drawable/ripple_surface"
+        android:gravity="center"
+        android:padding="@dimen/padding_normal"
+        android:text="@android:string/ok"
+        app:layout_constrainedWidth="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toEndOf="@id/tv_cancel"
+        app:layout_constraintTop_toTopOf="@id/barr"
+        app:layout_constraintWidth_max="wrap"
+        app:layout_constraintWidth_percent="0.5"
+        />
+
+</merge>

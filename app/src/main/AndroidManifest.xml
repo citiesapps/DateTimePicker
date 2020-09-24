@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.appmea.datetimepicker">
+    package="com.appmea.datetimepicker.example">
 
     <application
         android:allowBackup="true"

@@ -1,10 +1,13 @@
-package com.appmea.datetimepicker;
+package com.appmea.datetimepicker.example;
 
 import android.os.Bundle;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.appmea.datetimepicker.DateSelectListener;
+import com.appmea.datetimepicker.example.R;
+import com.appmea.datetimepicker.Utils;
 import com.appmea.datetimepicker.views.DatePickerDialogFragment;
 import com.appmea.datetimepicker.views.TimePickerDialogFragment;
 

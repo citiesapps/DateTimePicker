@@ -4,6 +4,9 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.content.res.Resources;
+import android.graphics.Color;
+import android.graphics.PorterDuff;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.format.DateFormat;
 import android.view.LayoutInflater;
@@ -16,11 +19,14 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.appcompat.app.AppCompatDialogFragment;
+import androidx.core.graphics.BlendModeColorFilterCompat;
+import androidx.core.graphics.BlendModeCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.appmea.datetimepicker.CircularListView;
+import com.appmea.datetimepicker.ColorUtils;
 import com.appmea.datetimepicker.DateSelectListener;
 import com.appmea.datetimepicker.LoopItem;
 import com.appmea.datetimepicker.LoopListener;
@@ -104,7 +110,8 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
     private DateTime minDateTime;
     private DateTime selectedDateTime;
 
-    private View view;
+    private ColorUtils colorUtils;
+    private View       view;
 
     @Nullable private DateSelectListener listener;
 
@@ -327,6 +334,7 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
     @Override
     public void onAttach(@NotNull Context context) {
         super.onAttach(context);
+        colorUtils = new ColorUtils(context);
 
         // Parent is a fragment (getParentFragment() returns null, if no parent fragment exists and is directly attached to an activity
         if (getParentFragment() instanceof DateSelectListener) {
@@ -402,18 +410,7 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
 
         ButterKnife.bind(this, view);
 
-        if (title != null) {
-            tvTitle.setText(title);
-            tvTitle.setVisibility(View.VISIBLE);
-        }
-
-        if (titleButton != null) {
-            tvSelect.setText(titleButton);
-        }
-
-        tvSelect.setTextColor(colorButton);
-        tvCancel.setTextColor(colorButton);
-
+        initViews();
         initLoopViews();
 
         return view;
@@ -425,6 +422,9 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
         Dialog dialog = super.onCreateDialog(savedInstanceState);
         if (dialog.getWindow() != null) {
             dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                dialog.getWindow().getDecorView().getBackground().setColorFilter(BlendModeColorFilterCompat.createBlendModeColorFilterCompat(Color.TRANSPARENT, BlendModeCompat.SRC_IN));
+            }
         }
         return dialog;
     }
@@ -441,6 +441,29 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
 
     // ====================================================================================================================================================================================
     // <editor-fold desc="Initialisation">
+
+    private void initViews() {
+        if (title != null) {
+            tvTitle.setText(title);
+            tvTitle.setVisibility(View.VISIBLE);
+        }
+
+        if (titleButton != null) {
+            tvSelect.setText(titleButton);
+        }
+
+
+        tvDate.setTextColor(colorUtils.getColorOnPrimary());
+        tvDate.setBackgroundColor(colorUtils.getColorPrimary());
+
+        tvSelect.setTextColor(colorButton);
+        tvCancel.setTextColor(colorButton);
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            tvCancel.setBackground(colorUtils.createRipple());
+            tvSelect.setBackground(colorUtils.createRipple());
+        }
+    }
 
     private void initLoopViews() {
         if (yearsEnabled()) {

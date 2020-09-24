@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector>
+    <!-- Dummy selector -->
+    <!-- Real selector is set inside TimePickerDialogFragment/DatePickerDialogFragment-->
+    <!-- https://stackoverflow.com/questions/8041537/how-to-reference-style-attributes-from-a-drawable/13471695#13471695 -->
+</selector>
