@@ -47,7 +47,6 @@ public class DatePickerActivity extends AppCompatActivity implements DateSelectL
                         .withMinDateTime(new DateTime(2000, 4, 10, 12, 0))
                         .withMaxDateTime(new DateTime(2021, 8, 5, 12, 0))
                         .withTextSize((int) (getResources().getDisplayMetrics().density * 24))
-                        .withTitle("Test Title")
                         .withButtonText("Bitte Auswählen")
                         .withButtonColor(0xFFF23123)
                         .withTextColor(0xFFD3B81F)

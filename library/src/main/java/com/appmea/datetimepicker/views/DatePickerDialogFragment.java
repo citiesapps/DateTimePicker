@@ -424,7 +424,7 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
         Dialog dialog = super.onCreateDialog(savedInstanceState);
         if (dialog.getWindow() != null) {
-            dialog.getWindow().requestFeature(Window.FEATURE_NO_TITLE);
+            dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         }
         return dialog;
     }

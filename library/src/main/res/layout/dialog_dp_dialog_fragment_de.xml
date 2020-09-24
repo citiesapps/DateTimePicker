@@ -32,6 +32,8 @@
         android:gravity="center"
         android:paddingStart="16dp"
         android:paddingTop="8dp"
+        android:background="?attr/colorPrimary"
+        android:textColor="?attr/colorOnPrimary"
         android:paddingEnd="16dp"
         android:paddingBottom="16dp"
         android:textSize="14sp"
