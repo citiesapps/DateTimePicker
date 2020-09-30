@@ -7,9 +7,9 @@
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">#abc</item>
         <item name="colorOnPrimary">#beef</item>
-        <item name="colorSurface">#59B221</item>
+        <item name="colorSurface">#fff</item>
         <item name="colorBackgroundFloating">?colorSurface</item>
-        <item name="colorRippleSurface" >#1F000000</item>
+        <item name="colorRippleSurface" >#AC0606</item>
     </style>
 
 </resources>

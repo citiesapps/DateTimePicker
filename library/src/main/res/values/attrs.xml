@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <attr name="colorRippleSurface" format="color|reference" />
-
     <declare-styleable name="CircularListView">
         <attr name="textSize" format="dimension" />
         <attr name="selectedTextColor" format="color" />

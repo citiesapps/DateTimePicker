@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.res.ColorStateList;
 import android.content.res.Resources;
 import android.graphics.Color;
-import android.graphics.PorterDuff;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.format.DateFormat;
@@ -25,8 +24,8 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.appmea.colorutils.MaterialColorUtils;
 import com.appmea.datetimepicker.CircularListView;
-import com.appmea.datetimepicker.ColorUtils;
 import com.appmea.datetimepicker.DateSelectListener;
 import com.appmea.datetimepicker.LoopItem;
 import com.appmea.datetimepicker.LoopListener;
@@ -110,8 +109,8 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
     private DateTime minDateTime;
     private DateTime selectedDateTime;
 
-    private ColorUtils colorUtils;
-    private View       view;
+    private MaterialColorUtils colorUtils;
+    private View               view;
 
     @Nullable private DateSelectListener listener;
 
@@ -334,7 +333,7 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
     @Override
     public void onAttach(@NotNull Context context) {
         super.onAttach(context);
-        colorUtils = new ColorUtils(context);
+        colorUtils = new MaterialColorUtils(context);
 
         // Parent is a fragment (getParentFragment() returns null, if no parent fragment exists and is directly attached to an activity
         if (getParentFragment() instanceof DateSelectListener) {
@@ -422,9 +421,7 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
         Dialog dialog = super.onCreateDialog(savedInstanceState);
         if (dialog.getWindow() != null) {
             dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                dialog.getWindow().getDecorView().getBackground().setColorFilter(BlendModeColorFilterCompat.createBlendModeColorFilterCompat(Color.TRANSPARENT, BlendModeCompat.SRC_IN));
-            }
+            dialog.getWindow().getDecorView().getBackground().setColorFilter(BlendModeColorFilterCompat.createBlendModeColorFilterCompat(Color.TRANSPARENT, BlendModeCompat.SRC_IN));
         }
         return dialog;
     }
@@ -460,8 +457,8 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
         tvCancel.setTextColor(colorButton);
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-            tvCancel.setBackground(colorUtils.createRipple());
-            tvSelect.setBackground(colorUtils.createRipple());
+            tvCancel.setBackground(colorUtils.createRippleSurface());
+            tvSelect.setBackground(colorUtils.createRippleSurface());
         }
     }
 
@@ -470,26 +467,26 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
             lvYear.setVisibility(View.VISIBLE);
             years = createDateItemList(minDateTime.getYear(), maxDateTime.getYear());
             lvYear.initialize(lvYear.new Initializer()
-                    .items(years)
-                    .loopEnabled((loops & LOOP_YEAR) != 0)
-                    .listener(new LoopListener() {
-                        @Override
-                        public void onItemSettled(LoopItem item) {
-                            handleYearSelected(item);
-                        }
+                                      .items(years)
+                                      .loopEnabled((loops & LOOP_YEAR) != 0)
+                                      .listener(new LoopListener() {
+                                          @Override
+                                          public void onItemSettled(LoopItem item) {
+                                              handleYearSelected(item);
+                                          }
 
-                        @Override
-                        public void onItemScrolled(LoopItem item) {
-                            if (item == null) {
-                                return;
-                            }
-                            updateSelectedItemText(selectedDateTime.year().setCopy(item.getText()));
-                        }
-                    })
-                    .initPosition(calcInitYear())
-                    .textSize(textSizeDP)
-                    .textColor(colorText)
-                    .selectedTextColor(colorTextSelected)
+                                          @Override
+                                          public void onItemScrolled(LoopItem item) {
+                                              if (item == null) {
+                                                  return;
+                                              }
+                                              updateSelectedItemText(selectedDateTime.year().setCopy(item.getText()));
+                                          }
+                                      })
+                                      .initPosition(calcInitYear())
+                                      .textSize(textSizeDP)
+                                      .textColor(colorText)
+                                      .selectedTextColor(colorTextSelected)
             );
         }
 
@@ -497,26 +494,26 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
             lvMonth.setVisibility(View.VISIBLE);
             months = createMonthList(calcInitMinMonth(), calcInitMaxMonth());
             lvMonth.initialize(lvMonth.new Initializer()
-                    .items(months)
-                    .loopEnabled((loops & LOOP_MONTH) != 0)
-                    .listener(new LoopListener() {
-                        @Override
-                        public void onItemSettled(LoopItem item) {
-                            handleMonthSelected(item);
-                        }
+                                       .items(months)
+                                       .loopEnabled((loops & LOOP_MONTH) != 0)
+                                       .listener(new LoopListener() {
+                                           @Override
+                                           public void onItemSettled(LoopItem item) {
+                                               handleMonthSelected(item);
+                                           }
 
-                        @Override
-                        public void onItemScrolled(LoopItem item) {
-                            if (item == null) {
-                                return;
-                            }
-                            updateSelectedItemText(selectedDateTime.monthOfYear().setCopy(item.getText()));
-                        }
-                    })
-                    .initPosition(calcInitMonth())
-                    .textSize(textSizeDP)
-                    .textColor(colorText)
-                    .selectedTextColor(colorTextSelected)
+                                           @Override
+                                           public void onItemScrolled(LoopItem item) {
+                                               if (item == null) {
+                                                   return;
+                                               }
+                                               updateSelectedItemText(selectedDateTime.monthOfYear().setCopy(item.getText()));
+                                           }
+                                       })
+                                       .initPosition(calcInitMonth())
+                                       .textSize(textSizeDP)
+                                       .textColor(colorText)
+                                       .selectedTextColor(colorTextSelected)
             );
         }
 
@@ -524,25 +521,25 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
             lvDay.setVisibility(View.VISIBLE);
             days = createDateItemList(calcInitMinDay(), calcInitMaxDay());
             lvDay.initialize(lvDay.new Initializer()
-                    .listener(new LoopListener() {
-                        @Override
-                        public void onItemSettled(LoopItem item) {
-                            handleDaySelected(item);
-                        }
+                                     .listener(new LoopListener() {
+                                         @Override
+                                         public void onItemSettled(LoopItem item) {
+                                             handleDaySelected(item);
+                                         }
 
-                        @Override
-                        public void onItemScrolled(LoopItem item) {
-                            if (item == null) {
-                                return;
-                            }
-                            updateSelectedItemText(selectedDateTime.dayOfMonth().setCopy(item.getText()));
-                        }
-                    })
-                    .items(days)
-                    .initPosition(calcInitDay())
-                    .textSize(textSizeDP)
-                    .textColor(colorText)
-                    .selectedTextColor(colorTextSelected)
+                                         @Override
+                                         public void onItemScrolled(LoopItem item) {
+                                             if (item == null) {
+                                                 return;
+                                             }
+                                             updateSelectedItemText(selectedDateTime.dayOfMonth().setCopy(item.getText()));
+                                         }
+                                     })
+                                     .items(days)
+                                     .initPosition(calcInitDay())
+                                     .textSize(textSizeDP)
+                                     .textColor(colorText)
+                                     .selectedTextColor(colorTextSelected)
             );
         }
     }

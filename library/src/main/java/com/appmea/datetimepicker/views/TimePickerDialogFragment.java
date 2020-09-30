@@ -5,9 +5,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.content.res.Resources;
-import android.graphics.BlendModeColorFilter;
 import android.graphics.Color;
-import android.graphics.PorterDuff;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
@@ -30,8 +28,8 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.appmea.colorutils.MaterialColorUtils;
 import com.appmea.datetimepicker.CircularListView;
-import com.appmea.datetimepicker.ColorUtils;
 import com.appmea.datetimepicker.Constants;
 import com.appmea.datetimepicker.DateSelectListener;
 import com.appmea.datetimepicker.LoopItem;
@@ -84,8 +82,8 @@ public class TimePickerDialogFragment extends AppCompatDialogFragment {
     private int            colorTextSelected;
     private ColorStateList colorButton;
 
-    private ColorUtils colorUtils;
-    private View       view;
+    private MaterialColorUtils colorUtils;
+    private View               view;
 
     @BindView(R2.id.tv_title)         TextView                         tvTitle;
     @BindView(R2.id.lv_hours)         CircularListView<StringLoopItem> lvHours;
@@ -245,7 +243,7 @@ public class TimePickerDialogFragment extends AppCompatDialogFragment {
     @Override
     public void onAttach(@NotNull Context context) {
         super.onAttach(context);
-        colorUtils = new ColorUtils(context);
+        colorUtils = new MaterialColorUtils(context);
 
         // Parent is a fragment (getParentFragment() returns null, if no parent fragment exists and is directly attached to an activity
         if (getParentFragment() instanceof DateSelectListener) {
@@ -346,8 +344,8 @@ public class TimePickerDialogFragment extends AppCompatDialogFragment {
         tvCancel.setTextColor(colorButton);
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-            tvCancel.setBackground(colorUtils.createRipple());
-            tvSelect.setBackground(colorUtils.createRipple());
+            tvCancel.setBackground(colorUtils.createRippleSurface());
+            tvSelect.setBackground(colorUtils.createRippleSurface());
         }
 
         tvSelect.setTextColor(colorButton);
