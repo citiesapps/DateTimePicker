@@ -20,6 +20,7 @@ public class Constants {
     public static final String ARGUMENT_LOOPS               = "loops";
     public static final String ARGUMENT_MAX_DATE_TIME       = "max_date_time";
     public static final String ARGUMENT_MIN_DATE_TIME       = "min_date_time";
+    public static final String ARGUMENT_RADIUS              = "radius";
     public static final String ARGUMENT_SELECTED_DATE_TIME  = "selected_date_time";
     public static final String ARGUMENT_TEXT_SIZE           = "text_size";
     public static final String ARGUMENT_TITLE               = "title";

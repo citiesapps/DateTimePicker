@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.format.DateFormat;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,6 +35,7 @@ import com.appmea.datetimepicker.R2;
 import com.appmea.datetimepicker.Utils;
 import com.appmea.datetimepicker.items.MonthLoopItem;
 import com.appmea.datetimepicker.items.StringLoopItem;
+import com.appmea.roundedlayouts.layouts.RoundedConstraintLayout;
 
 import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
@@ -56,6 +58,7 @@ import static com.appmea.datetimepicker.Constants.ARGUMENT_LISTENER_ID;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_LOOPS;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_MAX_DATE_TIME;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_MIN_DATE_TIME;
+import static com.appmea.datetimepicker.Constants.ARGUMENT_RADIUS;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_SELECTED_DATE_TIME;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_TEXT_SIZE;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_TITLE;
@@ -101,6 +104,7 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
     private String         title;
     private String         titleButton;
     private int            textSizeDP;
+    private int            radiusDP;
     private int            colorText;
     private int            colorTextSelected;
     private ColorStateList colorButton;
@@ -114,13 +118,14 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
 
     @Nullable private DateSelectListener listener;
 
-    @BindView(R2.id.tv_title)  TextView                         tvTitle;
-    @BindView(R2.id.tv_date)   TextView                         tvDate;
-    @BindView(R2.id.lv_years)  CircularListView<StringLoopItem> lvYear;
-    @BindView(R2.id.lv_months) CircularListView<MonthLoopItem>  lvMonth;
-    @BindView(R2.id.lv_days)   CircularListView<StringLoopItem> lvDay;
-    @BindView(R2.id.tv_cancel) TextView                         tvCancel;
-    @BindView(R2.id.tv_select) TextView                         tvSelect;
+    @BindView(R2.id.rcl_container) RoundedConstraintLayout          rclContainer;
+    @BindView(R2.id.tv_title)      TextView                         tvTitle;
+    @BindView(R2.id.tv_date)       TextView                         tvDate;
+    @BindView(R2.id.lv_years)      CircularListView<StringLoopItem> lvYear;
+    @BindView(R2.id.lv_months)     CircularListView<MonthLoopItem>  lvMonth;
+    @BindView(R2.id.lv_days)       CircularListView<StringLoopItem> lvDay;
+    @BindView(R2.id.tv_cancel)     TextView                         tvCancel;
+    @BindView(R2.id.tv_select)     TextView                         tvSelect;
     // </editor-fold>
 
 
@@ -178,6 +183,7 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
         arguments.putSerializable(ARGUMENT_MIN_DATE_TIME, builder.minDateTime);
         arguments.putSerializable(ARGUMENT_MAX_DATE_TIME, builder.maxDateTime);
         arguments.putSerializable(ARGUMENT_SELECTED_DATE_TIME, builder.selectedDateTime);
+        arguments.putInt(ARGUMENT_RADIUS, builder.radiusDP);
 
         fragment.setArguments(arguments);
         return fragment;
@@ -212,6 +218,7 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
         @StringRes
         private int    buttonTextRes;
         private String buttonTextString;
+        private int    radiusDP = 0;
         // </editor-fold>
 
 
@@ -322,6 +329,11 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
             this.colorButton = colorButton;
             return this;
         }
+
+        public Builder withRoundedCorners(int radiusDP) {
+            this.radiusDP = radiusDP;
+            return this;
+        }
         // </editor-fold>
     }
     // </editor-fold>
@@ -374,6 +386,7 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
             fields = getArguments().getInt(ARGUMENT_FIELDS);
             loops = getArguments().getInt(ARGUMENT_LOOPS);
             textSizeDP = getArguments().getInt(ARGUMENT_TEXT_SIZE);
+            radiusDP = getArguments().getInt(ARGUMENT_RADIUS);
             colorText = getArguments().getInt(ARGUMENT_COLOR_TEXT);
             colorTextSelected = getArguments().getInt(ARGUMENT_COLOR_TEXT_SELECTED);
             colorButton = getArguments().getParcelable(ARGUMENT_COLOR_BUTTON);
@@ -440,6 +453,8 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
     // <editor-fold desc="Initialisation">
 
     private void initViews() {
+        rclContainer.setCornerRadius((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, radiusDP, getResources().getDisplayMetrics()));
+
         if (title != null) {
             tvTitle.setText(title);
             tvTitle.setVisibility(View.VISIBLE);
@@ -457,8 +472,8 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
         tvCancel.setTextColor(colorButton);
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-            tvCancel.setBackground(colorUtils.createRippleSurface());
-            tvSelect.setBackground(colorUtils.createRippleSurface());
+            tvCancel.setBackground(colorUtils.createRippleSurface(tvCancel));
+            tvSelect.setBackground(colorUtils.createRippleSurface(tvSelect));
         }
     }
 

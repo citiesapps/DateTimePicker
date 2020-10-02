@@ -44,7 +44,7 @@ dependencies {
     implementation 'com.jakewharton:butterknife:10.2.1'
     annotationProcessor 'com.jakewharton:butterknife-compiler:10.2.1'
 
-    api 'com.github.TreyWurm:RoundedLayouts:1.0.4'
+    api 'com.github.TreyWurm:RoundedLayouts:1.0.6'
 
     api "joda-time:joda-time:2.10.5"
 }

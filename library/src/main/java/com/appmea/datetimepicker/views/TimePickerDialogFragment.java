@@ -12,6 +12,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,6 +39,7 @@ import com.appmea.datetimepicker.R;
 import com.appmea.datetimepicker.R2;
 import com.appmea.datetimepicker.Utils;
 import com.appmea.datetimepicker.items.StringLoopItem;
+import com.appmea.roundedlayouts.layouts.RoundedConstraintLayout;
 
 import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
@@ -55,6 +57,7 @@ import static com.appmea.datetimepicker.Constants.ARGUMENT_COLOR_BUTTON;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_COLOR_TEXT;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_COLOR_TEXT_SELECTED;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_LISTENER_ID;
+import static com.appmea.datetimepicker.Constants.ARGUMENT_RADIUS;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_SELECTED_DATE_TIME;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_TEXT_SIZE;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_TITLE;
@@ -78,6 +81,7 @@ public class TimePickerDialogFragment extends AppCompatDialogFragment {
     private String         title;
     private String         titleButton;
     private int            textSizeDP;
+    private int            radiusDP;
     private int            colorText;
     private int            colorTextSelected;
     private ColorStateList colorButton;
@@ -85,6 +89,7 @@ public class TimePickerDialogFragment extends AppCompatDialogFragment {
     private MaterialColorUtils colorUtils;
     private View               view;
 
+    @BindView(R2.id.rcl_container)    RoundedConstraintLayout          rclContainer;
     @BindView(R2.id.tv_title)         TextView                         tvTitle;
     @BindView(R2.id.lv_hours)         CircularListView<StringLoopItem> lvHours;
     @BindView(R2.id.iv_double_point1) View                             vDoublePoint1;
@@ -173,6 +178,7 @@ public class TimePickerDialogFragment extends AppCompatDialogFragment {
         @StringRes
         private int    buttonTextRes;
         private String buttonTextString;
+        private int    radiusDP = 0;
         // </editor-fold>
 
 
@@ -232,6 +238,11 @@ public class TimePickerDialogFragment extends AppCompatDialogFragment {
             this.colorButton = colorButton;
             return this;
         }
+
+        public Builder withRoundedCorners(int radiusDP) {
+            this.radiusDP = radiusDP;
+            return this;
+        }
         // </editor-fold>
     }
     // </editor-fold>
@@ -281,6 +292,7 @@ public class TimePickerDialogFragment extends AppCompatDialogFragment {
             }
 
             textSizeDP = getArguments().getInt(ARGUMENT_TEXT_SIZE);
+            radiusDP = getArguments().getInt(ARGUMENT_RADIUS);
             colorText = getArguments().getInt(ARGUMENT_COLOR_TEXT);
             colorTextSelected = getArguments().getInt(ARGUMENT_COLOR_TEXT_SELECTED);
             colorButton = getArguments().getParcelable(ARGUMENT_COLOR_BUTTON);
@@ -329,6 +341,8 @@ public class TimePickerDialogFragment extends AppCompatDialogFragment {
     // <editor-fold desc="Initialisation">
 
     private void initViews() {
+        rclContainer.setCornerRadius((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, radiusDP, getResources().getDisplayMetrics()));
+
         if (title != null) {
             tvTitle.setText(title);
             tvTitle.setVisibility(View.VISIBLE);
@@ -342,8 +356,8 @@ public class TimePickerDialogFragment extends AppCompatDialogFragment {
         tvCancel.setTextColor(colorButton);
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-            tvCancel.setBackground(colorUtils.createRippleSurface());
-            tvSelect.setBackground(colorUtils.createRippleSurface());
+            tvCancel.setBackground(colorUtils.createRippleSurface(tvCancel));
+            tvSelect.setBackground(colorUtils.createRippleSurface(tvSelect));
         }
 
         tvSelect.setTextColor(colorButton);
@@ -357,32 +371,32 @@ public class TimePickerDialogFragment extends AppCompatDialogFragment {
     private void initLoopViews() {
         lvHours.setVisibility(View.VISIBLE);
         lvHours.initialize(lvHours.new Initializer()
-                .items(createDateItemList(23))
-                .listener(new LoopListener() {
-                    @Override
-                    public void onItemSettled(LoopItem item) {
-                        selectedTime = selectedTime.withHourOfDay(Integer.parseInt(item.getText()));
-                    }
-                })
-                .initPosition(selectedTime.getHourOfDay())
-                .textSize(textSizeDP)
-                .textColor(colorText)
-                .selectedTextColor(colorTextSelected)
+                                   .items(createDateItemList(23))
+                                   .listener(new LoopListener() {
+                                       @Override
+                                       public void onItemSettled(LoopItem item) {
+                                           selectedTime = selectedTime.withHourOfDay(Integer.parseInt(item.getText()));
+                                       }
+                                   })
+                                   .initPosition(selectedTime.getHourOfDay())
+                                   .textSize(textSizeDP)
+                                   .textColor(colorText)
+                                   .selectedTextColor(colorTextSelected)
         );
 
         lvMinutes.setVisibility(View.VISIBLE);
         lvMinutes.initialize(lvMinutes.new Initializer()
-                .items(createDateItemList(59))
-                .listener(new LoopListener() {
-                    @Override
-                    public void onItemSettled(LoopItem item) {
-                        selectedTime = selectedTime.withMinuteOfHour(Integer.parseInt(item.getText()));
-                    }
-                })
-                .initPosition(selectedTime.getMinuteOfHour())
-                .textSize(textSizeDP)
-                .textColor(colorText)
-                .selectedTextColor(colorTextSelected)
+                                     .items(createDateItemList(59))
+                                     .listener(new LoopListener() {
+                                         @Override
+                                         public void onItemSettled(LoopItem item) {
+                                             selectedTime = selectedTime.withMinuteOfHour(Integer.parseInt(item.getText()));
+                                         }
+                                     })
+                                     .initPosition(selectedTime.getMinuteOfHour())
+                                     .textSize(textSizeDP)
+                                     .textColor(colorText)
+                                     .selectedTextColor(colorTextSelected)
         );
     }
     // </editor-fold>
