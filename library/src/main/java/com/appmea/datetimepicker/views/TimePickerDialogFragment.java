@@ -17,7 +17,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -30,16 +29,14 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.appmea.colorutils.MaterialColorUtils;
-import com.appmea.datetimepicker.CircularListView;
 import com.appmea.datetimepicker.Constants;
 import com.appmea.datetimepicker.DateSelectListener;
 import com.appmea.datetimepicker.LoopItem;
 import com.appmea.datetimepicker.LoopListener;
-import com.appmea.datetimepicker.R;
-import com.appmea.datetimepicker.R2;
 import com.appmea.datetimepicker.Utils;
+import com.appmea.datetimepicker.databinding.DialogTpDialogFragmentBinding;
+import com.appmea.datetimepicker.databinding.LayoutTpBinding;
 import com.appmea.datetimepicker.items.StringLoopItem;
-import com.appmea.roundedlayouts.layouts.RoundedConstraintLayout;
 
 import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
@@ -47,9 +44,6 @@ import org.joda.time.DateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import butterknife.BindView;
-import butterknife.ButterKnife;
-import butterknife.OnClick;
 import timber.log.Timber;
 
 import static com.appmea.datetimepicker.Constants.ARGUMENT_BUTTON_TITLE;
@@ -77,6 +71,9 @@ public class TimePickerDialogFragment extends AppCompatDialogFragment {
     private DateSelectListener listener;
     private DateTime           selectedTime = new DateTime();
 
+    private DialogTpDialogFragmentBinding binding;
+    private LayoutTpBinding               bindingContent;
+
     private int            listenerId;
     private String         title;
     private String         titleButton;
@@ -87,16 +84,6 @@ public class TimePickerDialogFragment extends AppCompatDialogFragment {
     private ColorStateList colorButton;
 
     private MaterialColorUtils colorUtils;
-    private View               view;
-
-    @BindView(R2.id.rcl_container)    RoundedConstraintLayout          rclContainer;
-    @BindView(R2.id.tv_title)         TextView                         tvTitle;
-    @BindView(R2.id.lv_hours)         CircularListView<StringLoopItem> lvHours;
-    @BindView(R2.id.iv_double_point1) View                             vDoublePoint1;
-    @BindView(R2.id.iv_double_point2) View                             vDoublePoint2;
-    @BindView(R2.id.lv_minutes)       CircularListView<StringLoopItem> lvMinutes;
-    @BindView(R2.id.tv_cancel)        TextView                         tvCancel;
-    @BindView(R2.id.tv_select)        TextView                         tvSelect;
     // </editor-fold>
 
 
@@ -307,13 +294,14 @@ public class TimePickerDialogFragment extends AppCompatDialogFragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        view = inflater.inflate(R.layout.dialog_tp_dialog_fragment, container);
-        ButterKnife.bind(this, view);
+        binding = DialogTpDialogFragmentBinding.inflate(inflater, container, false);
+        bindingContent = LayoutTpBinding.bind(binding.getRoot());
 
         initViews();
         initLoopViews();
+        initListener();
 
-        return view;
+        return binding.getRoot();
     }
 
     @NonNull
@@ -341,63 +329,69 @@ public class TimePickerDialogFragment extends AppCompatDialogFragment {
     // <editor-fold desc="Initialisation">
 
     private void initViews() {
-        rclContainer.setCornerRadius((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, radiusDP, getResources().getDisplayMetrics()));
+        binding.rclContainer.setCornerRadius((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, radiusDP, getResources().getDisplayMetrics()));
 
         if (title != null) {
-            tvTitle.setText(title);
-            tvTitle.setVisibility(View.VISIBLE);
+            bindingContent.tvTitle.setText(title);
+            bindingContent.tvTitle.setVisibility(View.VISIBLE);
         }
 
         if (titleButton != null) {
-            tvSelect.setText(titleButton);
+            bindingContent.tvSelect.setText(titleButton);
         }
 
-        tvSelect.setTextColor(colorButton);
-        tvCancel.setTextColor(colorButton);
+        bindingContent.tvSelect.setTextColor(colorButton);
+        bindingContent.tvCancel.setTextColor(colorButton);
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-            tvCancel.setBackground(colorUtils.createRippleSurface(tvCancel));
-            tvSelect.setBackground(colorUtils.createRippleSurface(tvSelect));
+            bindingContent.tvCancel.setBackground(colorUtils.createRippleSurface(bindingContent.tvCancel));
+            bindingContent.tvSelect.setBackground(colorUtils.createRippleSurface(bindingContent.tvSelect));
         }
 
-        tvSelect.setTextColor(colorButton);
-        tvCancel.setTextColor(colorButton);
+        bindingContent.tvSelect.setTextColor(colorButton);
+        bindingContent.tvCancel.setTextColor(colorButton);
 
 
-        colorBackground(vDoublePoint1.getBackground(), colorTextSelected);
-        colorBackground(vDoublePoint2.getBackground(), colorTextSelected);
+        colorBackground(bindingContent.ivDoublePoint1.getBackground(), colorTextSelected);
+        colorBackground(bindingContent.ivDoublePoint2.getBackground(), colorTextSelected);
     }
 
+    @SuppressWarnings("unchecked")
     private void initLoopViews() {
-        lvHours.setVisibility(View.VISIBLE);
-        lvHours.initialize(lvHours.new Initializer()
-                                   .items(createDateItemList(23))
-                                   .listener(new LoopListener() {
-                                       @Override
-                                       public void onItemSettled(LoopItem item) {
-                                           selectedTime = selectedTime.withHourOfDay(Integer.parseInt(item.getText()));
-                                       }
-                                   })
-                                   .initPosition(selectedTime.getHourOfDay())
-                                   .textSize(textSizeDP)
-                                   .textColor(colorText)
-                                   .selectedTextColor(colorTextSelected)
+        bindingContent.lvHours.setVisibility(View.VISIBLE);
+        bindingContent.lvHours.initialize(bindingContent.lvHours.new Initializer()
+                                                  .items(createDateItemList(23))
+                                                  .listener(new LoopListener() {
+                                                      @Override
+                                                      public void onItemSettled(LoopItem item) {
+                                                          selectedTime = selectedTime.withHourOfDay(Integer.parseInt(item.getText()));
+                                                      }
+                                                  })
+                                                  .initPosition(selectedTime.getHourOfDay())
+                                                  .textSize(textSizeDP)
+                                                  .textColor(colorText)
+                                                  .selectedTextColor(colorTextSelected)
         );
 
-        lvMinutes.setVisibility(View.VISIBLE);
-        lvMinutes.initialize(lvMinutes.new Initializer()
-                                     .items(createDateItemList(59))
-                                     .listener(new LoopListener() {
-                                         @Override
-                                         public void onItemSettled(LoopItem item) {
-                                             selectedTime = selectedTime.withMinuteOfHour(Integer.parseInt(item.getText()));
-                                         }
-                                     })
-                                     .initPosition(selectedTime.getMinuteOfHour())
-                                     .textSize(textSizeDP)
-                                     .textColor(colorText)
-                                     .selectedTextColor(colorTextSelected)
+        bindingContent.lvMinutes.setVisibility(View.VISIBLE);
+        bindingContent.lvMinutes.initialize(bindingContent.lvMinutes.new Initializer()
+                                                    .items(createDateItemList(59))
+                                                    .listener(new LoopListener() {
+                                                        @Override
+                                                        public void onItemSettled(LoopItem item) {
+                                                            selectedTime = selectedTime.withMinuteOfHour(Integer.parseInt(item.getText()));
+                                                        }
+                                                    })
+                                                    .initPosition(selectedTime.getMinuteOfHour())
+                                                    .textSize(textSizeDP)
+                                                    .textColor(colorText)
+                                                    .selectedTextColor(colorTextSelected)
         );
+    }
+
+    private void initListener() {
+        bindingContent.tvSelect.setOnClickListener(v -> onSelectClicked());
+        bindingContent.tvCancel.setOnClickListener(v -> onCancelClicked());
     }
     // </editor-fold>
 
@@ -410,7 +404,6 @@ public class TimePickerDialogFragment extends AppCompatDialogFragment {
     // ====================================================================================================================================================================================
     // <editor-fold desc="Methods">
 
-    @OnClick(R2.id.tv_select)
     void onSelectClicked() {
         if (listener != null) {
             listener.onDateSelected(listenerId, selectedTime);
@@ -419,7 +412,6 @@ public class TimePickerDialogFragment extends AppCompatDialogFragment {
         dismiss();
     }
 
-    @OnClick(R2.id.tv_cancel)
     void onCancelClicked() {
         dismiss();
     }

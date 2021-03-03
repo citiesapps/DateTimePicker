@@ -30,9 +30,11 @@ import com.appmea.datetimepicker.CircularListView;
 import com.appmea.datetimepicker.DateSelectListener;
 import com.appmea.datetimepicker.LoopItem;
 import com.appmea.datetimepicker.LoopListener;
-import com.appmea.datetimepicker.R;
-import com.appmea.datetimepicker.R2;
 import com.appmea.datetimepicker.Utils;
+import com.appmea.datetimepicker.databinding.DialogDpDialogFragmentDeBinding;
+import com.appmea.datetimepicker.databinding.DialogDpDialogFragmentEnBinding;
+import com.appmea.datetimepicker.databinding.LayoutDpDeBinding;
+import com.appmea.datetimepicker.databinding.LayoutDpEnBinding;
 import com.appmea.datetimepicker.items.MonthLoopItem;
 import com.appmea.datetimepicker.items.StringLoopItem;
 import com.appmea.roundedlayouts.layouts.RoundedConstraintLayout;
@@ -44,9 +46,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import butterknife.BindView;
-import butterknife.ButterKnife;
-import butterknife.OnClick;
 import timber.log.Timber;
 
 import static com.appmea.datetimepicker.Constants.ARGUMENT_BUTTON_TITLE;
@@ -114,18 +113,17 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
     private DateTime selectedDateTime;
 
     private MaterialColorUtils colorUtils;
-    private View               view;
 
     @Nullable private DateSelectListener listener;
 
-    @BindView(R2.id.rcl_container) RoundedConstraintLayout          rclContainer;
-    @BindView(R2.id.tv_title)      TextView                         tvTitle;
-    @BindView(R2.id.tv_date)       TextView                         tvDate;
-    @BindView(R2.id.lv_years)      CircularListView<StringLoopItem> lvYear;
-    @BindView(R2.id.lv_months)     CircularListView<MonthLoopItem>  lvMonth;
-    @BindView(R2.id.lv_days)       CircularListView<StringLoopItem> lvDay;
-    @BindView(R2.id.tv_cancel)     TextView                         tvCancel;
-    @BindView(R2.id.tv_select)     TextView                         tvSelect;
+    private RoundedConstraintLayout          rclContainer;
+    private TextView                         tvTitle;
+    private TextView                         tvDate;
+    private CircularListView<StringLoopItem> lvYear;
+    private CircularListView<MonthLoopItem>  lvMonth;
+    private CircularListView<StringLoopItem> lvDay;
+    private TextView                         tvCancel;
+    private TextView                         tvSelect;
     // </editor-fold>
 
 
@@ -415,15 +413,42 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
 
     @Nullable
     @Override
+    @SuppressWarnings("unchecked")
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         boolean isGerman = DateFormat.getBestDateTimePattern(Locale.getDefault(), "MMM dd yyyy").startsWith("dd");
 
-        view = inflater.inflate(isGerman ? R.layout.dialog_dp_dialog_fragment_de : R.layout.dialog_dp_dialog_fragment_en, container);
+        View view;
+        if (isGerman) {
+            DialogDpDialogFragmentDeBinding binding = DialogDpDialogFragmentDeBinding.inflate(inflater, container, false);
+            LayoutDpDeBinding bindingContent = LayoutDpDeBinding.bind(binding.getRoot());
+            view = binding.getRoot();
 
-        ButterKnife.bind(this, view);
+            rclContainer = binding.rclContainer;
+            tvTitle = bindingContent.tvTitle;
+            tvDate = bindingContent.tvDate;
+            lvYear = bindingContent.lvYears;
+            lvMonth = bindingContent.lvMonths;
+            lvDay = bindingContent.lvDays;
+            tvCancel = bindingContent.tvCancel;
+            tvSelect = bindingContent.tvSelect;
+        } else {
+            DialogDpDialogFragmentEnBinding binding = DialogDpDialogFragmentEnBinding.inflate(inflater, container, false);
+            LayoutDpEnBinding bindingContent = LayoutDpEnBinding.bind(binding.getRoot());
+            view = binding.getRoot();
+
+            rclContainer = binding.rclContainer;
+            tvTitle = bindingContent.tvTitle;
+            tvDate = bindingContent.tvDate;
+            lvYear = bindingContent.lvYears;
+            lvMonth = bindingContent.lvMonths;
+            lvDay = bindingContent.lvDays;
+            tvCancel = bindingContent.tvCancel;
+            tvSelect = bindingContent.tvSelect;
+        }
 
         initViews();
         initLoopViews();
+        initListener();
 
         return view;
     }
@@ -559,6 +584,11 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
         }
     }
 
+    private void initListener() {
+        tvSelect.setOnClickListener(v -> onSelectClicked());
+        tvCancel.setOnClickListener(v -> onCancelClicked());
+    }
+
     private int calcInitMinMonth() {
         return Utils.isSameDay(selectedDateTime, minDateTime) ? minDateTime.getMonthOfYear() : 1;
     }
@@ -639,7 +669,6 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
     // ====================================================================================================================================================================================
     // <editor-fold desc="Methods">
 
-    @OnClick(R2.id.tv_select)
     void onSelectClicked() {
         if (listener != null) {
             listener.onDateSelected(listenerId, selectedDateTime);
@@ -648,7 +677,6 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
         dismiss();
     }
 
-    @OnClick(R2.id.tv_cancel)
     void onCancelClicked() {
         dismiss();
     }

@@ -6,14 +6,13 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.appmea.datetimepicker.DateSelectListener;
-import com.appmea.datetimepicker.example.R;
 import com.appmea.datetimepicker.Utils;
+import com.appmea.datetimepicker.example.databinding.ActivityDatePickerBinding;
 import com.appmea.datetimepicker.views.DatePickerDialogFragment;
 import com.appmea.datetimepicker.views.TimePickerDialogFragment;
 
 import org.joda.time.DateTime;
 
-import butterknife.ButterKnife;
 import timber.log.Timber;
 
 import static com.appmea.datetimepicker.views.DatePickerDialogFragment.FIELD_ALL;
@@ -31,29 +30,30 @@ public class DatePickerActivity extends AppCompatActivity implements DateSelectL
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Timber.plant(new Timber.DebugTree());
-        setContentView(R.layout.activity_date_picker);
-        ButterKnife.bind(this);
 
-        findViewById(R.id.tv_time_picker).setOnClickListener(v -> TimePickerDialogFragment.startFragment(this,
-                new TimePickerDialogFragment.Builder(LISTENER_TIME)
-                        .withTextSize((int) (getResources().getDisplayMetrics().density * 24))
-                        .withTitle("Test Title")
-                        .withButtonColor(0xFFF23123)
-                        .withTextColor(0xFFDff81F)
-                        .withSelectedTextColor(0xFF8FFF12)
+        ActivityDatePickerBinding binding = ActivityDatePickerBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+
+        binding.tvTimePicker.setOnClickListener(v -> TimePickerDialogFragment.startFragment(this,
+                                                                                                         new TimePickerDialogFragment.Builder(LISTENER_TIME)
+                                                                                                                 .withTextSize((int) (getResources().getDisplayMetrics().density * 24))
+                                                                                                                 .withTitle("Test Title")
+                                                                                                                 .withButtonColor(0xFFF23123)
+                                                                                                                 .withTextColor(0xFFDff81F)
+                                                                                                                 .withSelectedTextColor(0xFF8FFF12)
         ));
 
-        findViewById(R.id.tv_date_picker).setOnClickListener(v -> DatePickerDialogFragment.startFragment(this,
-                new DatePickerDialogFragment.Builder(LISTENER_DATE)
-                        .withFields(FIELD_ALL)
-                        .withLoops(NONE)
-                        .withMinDateTime(new DateTime(2000, 4, 10, 12, 0))
-                        .withMaxDateTime(new DateTime(2021, 8, 5, 12, 0))
-                        .withTextSize((int) (getResources().getDisplayMetrics().density * 24))
-                        .withButtonText("Bitte Auswählen")
-                        .withButtonColor(0xFFF23123)
-                        .withTextColor(0xFFD3B81F)
-                        .withSelectedTextColor(0xFF8F3A12)
+        binding.tvDatePicker.setOnClickListener(v -> DatePickerDialogFragment.startFragment(this,
+                                                                                                         new DatePickerDialogFragment.Builder(LISTENER_DATE)
+                                                                                                                 .withFields(FIELD_ALL)
+                                                                                                                 .withLoops(NONE)
+                                                                                                                 .withMinDateTime(new DateTime(2000, 4, 10, 12, 0))
+                                                                                                                 .withMaxDateTime(new DateTime(2021, 8, 5, 12, 0))
+                                                                                                                 .withTextSize((int) (getResources().getDisplayMetrics().density * 24))
+                                                                                                                 .withButtonText("Bitte Auswählen")
+                                                                                                                 .withButtonColor(0xFFF23123)
+                                                                                                                 .withTextColor(0xFFD3B81F)
+                                                                                                                 .withSelectedTextColor(0xFF8F3A12)
         ));
 
     }
