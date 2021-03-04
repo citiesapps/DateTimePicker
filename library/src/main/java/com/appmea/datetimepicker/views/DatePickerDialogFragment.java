@@ -50,6 +50,8 @@ import timber.log.Timber;
 
 import static com.appmea.datetimepicker.Constants.ARGUMENT_BUTTON_TITLE;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_COLOR_BUTTON;
+import static com.appmea.datetimepicker.Constants.ARGUMENT_COLOR_HEADER_BACKGROUND;
+import static com.appmea.datetimepicker.Constants.ARGUMENT_COLOR_HEADER_TEXT;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_COLOR_TEXT;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_COLOR_TEXT_SELECTED;
 import static com.appmea.datetimepicker.Constants.ARGUMENT_FIELDS;
@@ -97,16 +99,18 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
     private List<MonthLoopItem>  months;
     private List<StringLoopItem> days;
 
-    private int            listenerId;
-    private int            fields;
-    private int            loops;
-    private String         title;
-    private String         titleButton;
-    private int            textSizeDP;
-    private int            radiusDP;
-    private int            colorText;
-    private int            colorTextSelected;
-    private ColorStateList colorButton;
+    private           int            listenerId;
+    private           int            fields;
+    private           int            loops;
+    private           String         title;
+    private           String         titleButton;
+    private           int            textSizeDP;
+    private           int            radiusDP;
+    private           int            colorText;
+    private           int            colorTextSelected;
+    private           ColorStateList colorButton;
+    @Nullable private Integer        colorHeaderBackground;
+    @Nullable private Integer        colorHeaderText;
 
     private DateTime maxDateTime;
     private DateTime minDateTime;
@@ -124,6 +128,7 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
     private CircularListView<StringLoopItem> lvDay;
     private TextView                         tvCancel;
     private TextView                         tvSelect;
+    private View                             vHeaderBackground;
     // </editor-fold>
 
 
@@ -172,6 +177,14 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
             arguments.putString(ARGUMENT_BUTTON_TITLE, builder.buttonTextString);
         }
 
+        if (builder.colorHeaderBackground != null) {
+            arguments.putInt(ARGUMENT_COLOR_HEADER_BACKGROUND, builder.colorHeaderBackground);
+        }
+
+        if (builder.colorHeaderText != null) {
+            arguments.putInt(ARGUMENT_COLOR_HEADER_TEXT, builder.colorHeaderText);
+        }
+
         arguments.putInt(ARGUMENT_FIELDS, builder.fields);
         arguments.putInt(ARGUMENT_LOOPS, builder.loops);
         arguments.putInt(ARGUMENT_TEXT_SIZE, builder.textSizeDP);
@@ -200,11 +213,13 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
         // ====================================================================================================================================================================================
         // <editor-fold desc="Properties">
 
-        int            listenerId;
-        int            fields            = FIELD_ALL;
-        int            loops             = NONE;
-        int            textSizeDP        = (int) (16 * Resources.getSystem().getDisplayMetrics().density);
-        int            colorText         = 0XFFAFAFAF;
+        int listenerId;
+        int fields     = FIELD_ALL;
+        int loops      = NONE;
+        int textSizeDP = (int) (16 * Resources.getSystem().getDisplayMetrics().density);
+        int colorText  = 0XFFAFAFAF;
+        @Nullable Integer colorHeaderBackground;
+        @Nullable Integer colorHeaderText;
         int            colorSelectedText = 0XFF000000;
         ColorStateList colorButton       = ColorStateList.valueOf(0XFF000000);
         DateTime       minDateTime       = new DateTime(1900, 1, 1, 0, 0);
@@ -332,6 +347,16 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
             this.radiusDP = radiusDP;
             return this;
         }
+
+        public Builder withHeaderBackgroundColor(int backgroundColor) {
+            this.colorHeaderBackground = backgroundColor;
+            return this;
+        }
+
+        public Builder withHeaderTextColor(int textColor) {
+            this.colorHeaderText = textColor;
+            return this;
+        }
         // </editor-fold>
     }
     // </editor-fold>
@@ -388,6 +413,12 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
             colorText = getArguments().getInt(ARGUMENT_COLOR_TEXT);
             colorTextSelected = getArguments().getInt(ARGUMENT_COLOR_TEXT_SELECTED);
             colorButton = getArguments().getParcelable(ARGUMENT_COLOR_BUTTON);
+            if (getArguments().get(ARGUMENT_COLOR_HEADER_BACKGROUND) != null) {
+                colorHeaderBackground = getArguments().getInt(ARGUMENT_COLOR_HEADER_BACKGROUND);
+            }
+            if (getArguments().get(ARGUMENT_COLOR_HEADER_TEXT) != null) {
+                colorHeaderText = getArguments().getInt(ARGUMENT_COLOR_HEADER_TEXT);
+            }
 
             minDateTime = (DateTime) getArguments().getSerializable(ARGUMENT_MIN_DATE_TIME);
             maxDateTime = (DateTime) getArguments().getSerializable(ARGUMENT_MAX_DATE_TIME);
@@ -424,6 +455,7 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
             view = binding.getRoot();
 
             rclContainer = binding.rclContainer;
+            vHeaderBackground = bindingContent.vScrim;
             tvTitle = bindingContent.tvTitle;
             tvDate = bindingContent.tvDate;
             lvYear = bindingContent.lvYears;
@@ -437,6 +469,7 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
             view = binding.getRoot();
 
             rclContainer = binding.rclContainer;
+            vHeaderBackground = bindingContent.vScrim;
             tvTitle = bindingContent.tvTitle;
             tvDate = bindingContent.tvDate;
             lvYear = bindingContent.lvYears;
@@ -483,15 +516,17 @@ public class DatePickerDialogFragment extends AppCompatDialogFragment {
         if (title != null) {
             tvTitle.setText(title);
             tvTitle.setVisibility(View.VISIBLE);
+            tvTitle.setTextColor(colorHeaderText != null ? colorHeaderText : colorUtils.getColorOnPrimary());
         }
 
         if (titleButton != null) {
             tvSelect.setText(titleButton);
         }
 
+        vHeaderBackground.setBackgroundColor(colorHeaderBackground != null ? colorHeaderBackground : colorUtils.getColorPrimary());
 
         tvDate.setTextColor(colorUtils.getColorOnPrimary());
-        tvDate.setBackgroundColor(colorUtils.getColorPrimary());
+        tvDate.setTextColor(colorHeaderText != null ? colorHeaderText : colorUtils.getColorOnPrimary());
 
         tvSelect.setTextColor(colorButton);
         tvCancel.setTextColor(colorButton);
